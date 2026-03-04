@@ -13,7 +13,7 @@ from typing import Any
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from tools import sensitivity_classifier, route_to_model, validate_response
-    from prompts import SYSTEM_PROMPT
+from prompts import SYSTEM_PROMPT
 
 load_dotenv()
 
