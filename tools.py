@@ -110,7 +110,7 @@ def route_to_model(prompt: str, level: str) -> dict:
         result = llm.invoke(prompt)
 
         return {
-            "model_used": config["model"],
+            "model_used": config["id"],
             "response": result.content,
             "routing_reason": config["reason"],
             "success": True
@@ -118,7 +118,7 @@ def route_to_model(prompt: str, level: str) -> dict:
 
     except Exception as e:
         return {
-            "model_used": config["model"],
+            "model_used": config["id"],
             "response": "",
             "routing_reason": config["reason"], # Tror dennna kan tas bort, den är inte relevant om det blev ett error
             "success": False,
