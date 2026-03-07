@@ -2,6 +2,8 @@
 
 Ett agentiskt arbetsflöde som klassificerar användarpromptar efter känslig data (PII), maskerar detekterad PII innan vidarebefordran, dirigerar promptar till en lämplig modell baserat på känslighetsnivå, validerar svar och hanterar omförsök och fallbacks.
 
+Grupp 6: Abdulla Mehdi, Caroline Swanpalmer, Johanna Gull
+
 Byggt för Lab 2 (Agentiska arbetsflöden) i kursen *Tillämpning av AI-agenter i Unity* vid Högskolan i Borås.
 
 ## Innehållsförteckning
