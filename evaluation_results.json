@@ -7,17 +7,17 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 24.3
+    "time": 30.8
   },
   {
     "test": 2,
     "desc": "Innehåller e-postadress",
     "expected": "high",
-    "actual": "?",
-    "routing_ok": false,
-    "validation": "?",
-    "steps": 10,
-    "time": 780.7
+    "actual": "high",
+    "routing_ok": true,
+    "validation": "pass",
+    "steps": 6,
+    "time": 53.9
   },
   {
     "test": 3,
@@ -27,7 +27,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 69.7
+    "time": 51.8
   },
   {
     "test": 4,
@@ -37,7 +37,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 58.1
+    "time": 20.4
   },
   {
     "test": 5,
@@ -46,28 +46,28 @@
     "actual": "low",
     "routing_ok": false,
     "validation": "pass",
-    "steps": 5,
-    "time": 172.7
+    "steps": 4,
+    "time": 58.5
   },
   {
     "test": 6,
     "desc": "Innehåller lön (keyword)",
     "expected": "high",
-    "actual": "low",
+    "actual": "?",
     "routing_ok": false,
-    "validation": "pass",
-    "steps": 4,
-    "time": 35.8
+    "validation": "?",
+    "steps": 10,
+    "time": 948.4
   },
   {
     "test": 7,
     "desc": "Innehåller medicinsk diagnos (keyword)",
     "expected": "high",
-    "actual": "low",
+    "actual": "?",
     "routing_ok": false,
-    "validation": "pass",
-    "steps": 5,
-    "time": 279.5
+    "validation": "?",
+    "steps": 10,
+    "time": 1008.0
   },
   {
     "test": 8,
@@ -76,8 +76,8 @@
     "actual": "high",
     "routing_ok": true,
     "validation": "pass",
-    "steps": 5,
-    "time": 202.1
+    "steps": 4,
+    "time": 96.5
   },
   {
     "test": 9,
@@ -86,8 +86,8 @@
     "actual": "high",
     "routing_ok": true,
     "validation": "pass",
-    "steps": 6,
-    "time": 83.1
+    "steps": 7,
+    "time": 368.1
   },
   {
     "test": 10,
@@ -97,7 +97,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 65.7
+    "time": 11.2
   },
   {
     "test": 11,
@@ -107,7 +107,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 20.8
+    "time": 6.8
   },
   {
     "test": 12,
@@ -117,7 +117,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 37.9
+    "time": 8.2
   },
   {
     "test": 13,
@@ -127,7 +127,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 24.3
+    "time": 7.0
   },
   {
     "test": 14,
@@ -137,7 +137,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 48.7
+    "time": 8.5
   },
   {
     "test": 15,
@@ -146,8 +146,8 @@
     "actual": "low",
     "routing_ok": true,
     "validation": "pass",
-    "steps": 9,
-    "time": 366.4
+    "steps": 4,
+    "time": 8.9
   },
   {
     "test": 16,
@@ -157,7 +157,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 7.6
+    "time": 7.5
   },
   {
     "test": 17,
@@ -167,7 +167,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 8.8
+    "time": 8.7
   },
   {
     "test": 18,
@@ -177,7 +177,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 9.1
+    "time": 8.6
   },
   {
     "test": 19,
@@ -187,7 +187,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 8.1
+    "time": 8.3
   },
   {
     "test": 20,
@@ -197,6 +197,6 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 7.2
+    "time": 7.0
   }
 ]
