@@ -101,8 +101,8 @@ def route_to_model(prompt: str, level: str) -> dict:
     #config = MODEL_CONFIG.get(level, MODEL_CONFIG["high"])  # standard: säker modell
 
     mapping = {
-        "high": {"id": "llama-large", "reason": "Känslig data kräver kraftfullare modell"},
-        "low": {"id": "llama-small", "reason": "Enkel fråga, optimerar för snabbhet"}
+        "high": {"id": "llama-small", "reason": "Känslig data — använder lokal/säker modell"},
+        "low": {"id": "llama-large", "reason": "Ingen känslig data — använder kraftfull cloud-modell"},
     }
 
     config = mapping.get(level, mapping["high"])

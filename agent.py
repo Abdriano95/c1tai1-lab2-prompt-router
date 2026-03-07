@@ -119,15 +119,23 @@ def _derive_next_hint(trajectory: list[dict[str, Any]]) -> str:
             )
         else:
             route_count = sum(1 for t in tool_entries if t["tool_name"] == "route_to_model")
-            if route_count >= 3:
+            orig_level = classify_result.get("level", "low") if classify_result else "low"
+
+            if route_count >= 2:
                 route_res = _latest_route_result()
                 return (
                     'NEXT: max retries reached. Return {"action": "final", ...} now.\n'
                     f"Use this as final_answer: {route_res.get('response', '')}\n"
                     f"validation_status: fail"
                 )
-            level = classify_result.get("level", "high") if classify_result else "high"
-            return f'NEXT: validation failed. Retry route_to_model with level="{level}".'
+
+            if orig_level == "high" and route_count == 1:
+                return (
+                    'NEXT: validation failed. Escalate: call route_to_model with level="low" '
+                    "(PII will be masked automatically, cloud model gets a safe prompt)."
+                )
+
+            return 'NEXT: validation failed. Retry route_to_model with the same level.'
 
     return "NEXT: choose the appropriate action."
 
@@ -308,7 +316,18 @@ def run_agent(user_prompt: str) -> dict:
                 continue
 
             if tool_name == "route_to_model":
-                tool_input["prompt"] = mask_pii(user_prompt)
+                route_count = sum(
+                    1 for t in trajectory if t.get("tool_name") == "route_to_model"
+                )
+                classify_level = next(
+                    (t["tool_result"].get("level") for t in trajectory
+                     if t.get("tool_name") == "classify_sensitivity"), "low"
+                )
+                if classify_level == "high" and route_count > 0:
+                    tool_input["prompt"] = mask_pii(user_prompt)
+                    tool_input["level"] = "low"
+                else:
+                    tool_input["prompt"] = user_prompt
 
             if tool_name == "validate_response":
                 latest_route = next(
@@ -341,7 +360,7 @@ def run_agent(user_prompt: str) -> dict:
                 route_count = sum(
                     1 for t in trajectory if t.get("tool_name") == "route_to_model"
                 )
-                if route_count >= 3:
+                if route_count >= 2:
                     print(f"\n[Step {step}] Max antal retries uppnått — returnerar slutsvar.")
                     latest_route = next(
                         (t["tool_result"] for t in reversed(trajectory)
