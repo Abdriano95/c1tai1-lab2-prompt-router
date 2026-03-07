@@ -30,9 +30,6 @@ def run_evaluation():
     print("=" * 60)
 
     for i, test_case in enumerate(TEST_PROMPTS):
-        if i > 0:
-            time.sleep(60)
-
         prompt = test_case["prompt"]
         expected = test_case["expected_level"]
         description = test_case["description"]
@@ -102,9 +99,6 @@ def run_baseline():
     pii_leaks = 0
 
     for i, test_case in enumerate(TEST_PROMPTS):
-        if i > 0:
-            time.sleep(30)
-
         prompt = test_case["prompt"]
 
         start_time = time.time()

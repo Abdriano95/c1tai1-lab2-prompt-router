@@ -10,7 +10,6 @@ Loopen kör tills agenten säger "final" eller max_steps nås.
 import json
 import os
 import re
-import time
 from typing import Any
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
@@ -175,33 +174,15 @@ def run_agent(user_prompt: str) -> dict:
     trajectory = []
 
     for step in range(1, MAX_STEPS + 1):
-        if step > 1:
-            time.sleep(2)
-
         # --- 1. Bygg state-prompt ---
         state_prompt = build_state_prompt(user_prompt, trajectory, step)
 
-        # --- 2. Skicka till orchestrator-LLM (med rate-limit retry) ---
-        raw_output = None
-        for attempt in range(3):
-            try:
-                response = orchestrator_llm.invoke([
-                    ("system", SYSTEM_PROMPT),
-                    ("human", state_prompt)
-                ])
-                raw_output = response.content.strip()
-                break
-            except Exception as e:
-                if "429" in str(e) or "rate_limit" in str(e).lower():
-                    wait = (attempt + 1) * 10
-                    print(f"[Step {step}] Rate limited, waiting {wait}s...")
-                    time.sleep(wait)
-                else:
-                    raise
-        if raw_output is None:
-            print(f"[Step {step}] ERROR: LLM call failed after retries")
-            trajectory.append({"step": step, "error": "llm_call_failed"})
-            continue
+        # --- 2. Skicka till orchestrator-LLM ---
+        response = orchestrator_llm.invoke([
+            ("system", SYSTEM_PROMPT),
+            ("human", state_prompt)
+        ])
+        raw_output = response.content.strip()
 
         # --- 3. Logga rå output ---
         print(f"\n[Step {step}] Raw LLM output:")
@@ -320,22 +301,11 @@ def run_agent(user_prompt: str) -> dict:
                     tool_input["original_prompt"] = user_prompt
 
             print(f"[Step {step}] Calling tool: {tool_name}")
-            tool_result = None
-            for tool_attempt in range(3):
-                try:
-                    tool_result = TOOLS[tool_name](tool_input)
-                    break
-                except Exception as e:
-                    if "429" in str(e) or "rate_limit" in str(e).lower():
-                        wait = (tool_attempt + 1) * 15
-                        print(f"[Step {step}] Tool rate limited, waiting {wait}s...")
-                        time.sleep(wait)
-                    else:
-                        tool_result = {"error": str(e)}
-                        print(f"[Step {step}] Tool error: {e}")
-                        break
-            if tool_result is None:
-                tool_result = {"error": "rate_limit_exceeded_after_retries"}
+            try:
+                tool_result = TOOLS[tool_name](tool_input)
+            except Exception as e:
+                tool_result = {"error": str(e)}
+                print(f"[Step {step}] Tool error: {e}")
 
             print(f"[Step {step}] Tool result: {json.dumps(tool_result, ensure_ascii=False)}")
 
