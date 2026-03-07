@@ -178,5 +178,15 @@
     "validation": "pass",
     "steps": 4,
     "time": 9.1
+  },
+  {
+    "test": 19,
+    "desc": "Bokförslag",
+    "expected": "low",
+    "actual": "low",
+    "routing_ok": true,
+    "validation": "pass",
+    "steps": 4,
+    "time": 8.1
   }
 ]
