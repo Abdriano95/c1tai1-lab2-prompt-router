@@ -39,7 +39,7 @@ orchestrator_llm = ChatGroq(
 # ============================================================
 
 TOOLS = {
-    "classify_sensitivity": lambda args: sensitivity_classifier(args["prompt"]),
+    "sensitivity_classifier": lambda args: sensitivity_classifier(args["prompt"]),
     "route_to_model": lambda args: route_to_model(args["prompt"], args["level"]),
     "validate_response": lambda args: validate_response(args["response"], args["original_prompt"]),
 }
