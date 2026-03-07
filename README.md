@@ -1,6 +1,6 @@
 # Prompt Sensitivity Router
 
-Ett agentiskt arbetsflöde som klassificerar användarpromptar efter känslig data (PII), maskerar detekterad PII innan vidarebefordran, dirigerar promptar till en lämplig modell baserat på känslighetsnivå, validerar svar och hanterar omförsök och fallbacks.
+Ett agentiskt arbetsflöde som klassificerar användarpromptar efter känslig data (PII), dirigerar dem till en lämplig modell baserat på känslighetsnivå, och eskalerar till en kraftfullare modell med PII-maskning om det initiala svaret inte passerar validering.
 
 Byggt för Lab 2 (Agentiska arbetsflöden) i kursen *Tillämpning av AI-agenter i Unity* vid Högskolan i Borås.
 
@@ -8,6 +8,7 @@ Byggt för Lab 2 (Agentiska arbetsflöden) i kursen *Tillämpning av AI-agenter 
 
 - [Uppgiftsdefinition](#uppgiftsdefinition)
 - [Arbetsflödesarkitektur](#arbetsflödesarkitektur)
+- [Arkitekturens utveckling](#arkitekturens-utveckling)
 - [Verktygsbeskrivningar](#verktygsbeskrivningar)
 - [Agentisk loop — Planera, Agera, Observera, Reflektera, Revidera](#agentisk-loop)
 - [Tillståndshantering](#tillståndshantering)
@@ -21,15 +22,15 @@ Byggt för Lab 2 (Agentiska arbetsflöden) i kursen *Tillämpning av AI-agenter 
 
 ## Uppgiftsdefinition
 
-**Mål:** Givet en godtycklig användarprompt, avgöra om den innehåller personligt identifierbar information (PII), dirigera den till en lämplig modell baserat på känslighetsnivån och returnera ett validerat svar.
+**Mål:** Givet en godtycklig användarprompt, avgöra om den innehåller personligt identifierbar information (PII), dirigera den till en lämplig modell baserat på känslighetsnivån, validera svaret, och eskalera till en kraftfullare modell med PII-maskning vid behov.
 
 **Input:** En naturlig-språklig prompt från en användare, som kan innehålla PII såsom personnummer, e-postadresser, telefonnummer, kreditkortsnummer eller känsliga nyckelord (medicinska, finansiella m.m.).
 
 **Åtgärder agenten kan utföra:**
 - Anropa `classify_sensitivity` för att detektera PII i prompten
-- Maskera detekterad PII med säkra platshållare innan routing
-- Anropa `route_to_model` för att skicka den (maskerade) prompten till en lämplig modell
+- Anropa `route_to_model` för att skicka prompten till den lokala/säkra modellen (hög känslighet) eller molnmodellen (låg känslighet)
 - Anropa `validate_response` för att kontrollera svarskvalitet och PII-läckage
+- Eskalera: om validering misslyckas för en prompt med hög känslighet, maskera PII och dirigera om till molnmodellen
 - Returnera ett slutgiltigt svar med en routing-sammanfattning
 
 **Miljödynamik:** Varje tool-anrop returnerar strukturerade resultat som läggs till i agentens trajectory. Agenten ser den fullständiga historiken av sina åtgärder och deras utfall när den bestämmer nästa steg.
@@ -74,22 +75,71 @@ Byggt för Lab 2 (Agentiska arbetsflöden) i kursen *Tillämpning av AI-agenter 
 
 ```mermaid
 flowchart TD
-    START[Användare skickar prompt] --> PLAN[Orchestrator: analysera prompt]
-    PLAN --> CLASSIFY[Tool: classify_sensitivity]
+    START[Användare skickar prompt] --> CLASSIFY[Tool: classify_sensitivity]
     CLASSIFY --> DECIDE{Känslighetsnivå?}
-    DECIDE -- high --> MASK[Maskera PII i prompt]
-    DECIDE -- low --> CLOUD[Tool: route_to_model → llama-3.1-70b-versatile]
-    MASK --> SECURE[Tool: route_to_model → llama-3.1-8b-instant]
-    SECURE --> VALIDATE[Tool: validate_response]
-    CLOUD --> VALIDATE
-    VALIDATE --> CHECK{Godkänt?}
-    CHECK -- pass --> DONE[Returnera slutgiltigt svar]
-    CHECK -- fail --> RETRY{Omförsök kvar?}
-    RETRY -- ja --> PLAN
-    RETRY -- nej --> FALLBACK[Returnera bästa tillgängliga svar]
+    DECIDE -- high --> LOCAL["route_to_model(rå prompt) → llama-small (lokal)"]
+    DECIDE -- low --> CLOUD["route_to_model(rå prompt) → llama-large (moln)"]
+    LOCAL --> VALIDATE1[Tool: validate_response]
+    CLOUD --> VALIDATE2[Tool: validate_response]
+    VALIDATE1 --> CHECK1{Godkänt?}
+    CHECK1 -- pass --> DONE1[Returnera slutgiltigt svar]
+    CHECK1 -- fail --> MASK[Maskera PII i prompt]
+    MASK --> ESCALATE["route_to_model(maskad prompt) → llama-large (moln)"]
+    ESCALATE --> VALIDATE3[Tool: validate_response]
+    VALIDATE3 --> CHECK2{Godkänt?}
+    CHECK2 -- pass --> DONE2[Returnera slutgiltigt svar]
+    CHECK2 -- fail --> FALLBACK[Returnera bästa tillgängliga svar]
+    VALIDATE2 --> CHECK3{Godkänt?}
+    CHECK3 -- pass --> DONE3[Returnera slutgiltigt svar]
+    CHECK3 -- fail --> RETRY[Omförsök / Returnera bästa tillgängliga svar]
 ```
 
-Systemet har tre lager: orchestrator-LLM:en (som fattar beslut), tre verktyg (som utför åtgärder) och controller-loopen (som binder ihop allt, applicerar PII-maskning innan routing och upprätthåller säkerhetsbegränsningar).
+Systemet använder en **eskalerande routingstrategi**:
+
+- **Prompts med hög känslighet** skickas först till den lilla/lokala modellen med den råa prompten (den lokala modellen är betrodd med känslig data). Om validering misslyckas (t.ex. PII läcker in i svaret) maskeras prompten och eskaleras till den stora/molnmodellen för ett bättre svar.
+- **Prompts med låg känslighet** går direkt till den stora/molnmodellen (ingen PII att skydda, bästa svarskvalitet).
+
+Controller-loopen binder ihop allt: orchestrator-LLM:en fattar beslut, verktygen utför åtgärder, och loopen applicerar PII-maskning dynamiskt enbart vid eskalering.
+
+---
+
+## Arkitekturens utveckling
+
+Routingarkitekturen gick igenom två versioner under utvecklingen.
+
+### v1: Statisk maskning (session 1–3)
+
+I den initiala designen maskerades alla prompts med hög känslighet innan de skickades till någon modell. Routingen var: high → stor modell (maskad), low → liten modell (rå).
+
+```
+HIGH: classify → maskera PII → route till stor modell → validate → final
+LOW:  classify → route till liten modell → validate → final
+```
+
+Detta fungerade (20/20 validering) men hade ett konceptuellt problem: maskning applicerades villkorslöst, trots att den "lokala" modellen borde vara betrodd med känslig data. Det fanns heller ingen riktig eskalering — om den valda modellen gav ett dåligt svar var enda alternativet att försöka igen med samma modell.
+
+### v2: Eskalerande routing (session 4, nuvarande)
+
+Routingen designades om för att vara mer realistisk och för att demonstrera ett tydligare iterationsmönster:
+
+```
+HIGH: classify → route till liten/lokal modell (rå) → validate
+      → om fail: maskera PII → eskalera till stor/molnmodell (maskad) → validate → final
+LOW:  classify → route till stor/molnmodell (rå) → validate → final
+```
+
+Viktiga förändringar:
+- **Routing vänd:** hög känslighet → liten/lokal modell först (betrodd med PII), låg känslighet → stor/molnmodell (bästa kvalitet)
+- **Maskning är villkorad:** appliceras enbart vid eskalering från lokal till moln, inte på varje prompt med hög känslighet
+- **Eskalering som iteration:** misslyckad validering utlöser ett genuint strategibyte (annan modell + maskning), vilket är en starkare demonstration av den agentiska reflektera → revidera-loopen
+
+| Aspekt | v1 (statisk maskning) | v2 (eskalerande routing) |
+|--------|----------------------|--------------------------|
+| Routing vid hög känslighet | Alltid till stor modell | Först till liten/lokal, eskalera till stor vid behov |
+| PII-maskning | Alltid, före första route | Enbart vid eskalering |
+| Användning av lokal modell | Användes inte för känslig data | Primär hanterare för känslig data |
+| Iterationsmönster | Försök igen med samma modell | Eskalera till annan modell med maskning |
+| Routingmappning | high→stor, low→liten | high→liten, low→stor |
 
 ---
 
@@ -103,9 +153,16 @@ Detta verktyg är medvetet regelbaserat, inte LLM-baserat. Om en moln-LLM använ
 
 ### route_to_model (Groq API-anrop)
 
-Tar prompten och dess känslighetsnivå och skickar den till lämplig modell. För prompts med hög känslighet ersätts först detekterad PII med säkra platshållare (`[EMAIL]`, `[PERSONNUMMER]`, `[TELEFONNUMMER]` m.fl.) så att modellen aldrig ser den faktiska känsliga datan. Prompts med hög känslighet skickas till `llama-3.1-8b-instant` (representerar en säker/lokal modell), medan prompts med låg känslighet skickas till `llama-3.1-70b-versatile` (representerar en molnmodell). Båda körs via Groqs API i denna prototyp, men routinglogiken är densamma som i en riktig lokal/moln-uppdelning.
+Tar prompten och dess känslighetsnivå och skickar den till lämplig modell:
 
-Maskeringen appliceras i controller-loopen (`agent.py`) innan verktyget anropas. Det innebär att `classify_sensitivity` ser den råa prompten (den behöver detektera PII), `route_to_model` ser den maskerade prompten (modellen ska aldrig se PII) och `validate_response` kontrollerar mot den råa prompten (för att fånga eventuell läckage).
+- `level="high"` → `llama-3.1-8b-instant` (liten modell, representerar en lokal/säker endpoint)
+- `level="low"` → `llama-3.1-70b-versatile` (stor modell, representerar en moln-endpoint)
+
+Båda körs via Groqs API i denna prototyp, men routinglogiken speglar en verklig lokal/moln-driftsättning.
+
+Vid eskalering (validering misslyckades för en prompt med hög känslighet) maskerar controller-loopen PII i prompten och anropar `route_to_model` igen med `level="low"`, vilket skickar den maskerade prompten till molnmodellen. Maskningen appliceras dynamiskt i `agent.py` — `route_to_model` själv känner inte till maskning.
+
+Dataflödet säkerställer korrekthet: `classify_sensitivity` ser den råa prompten (behöver detektera PII), `route_to_model` ser antingen den råa prompten (lokal modell, betrodd) eller den maskerade prompten (molnmodell, eskalering), och `validate_response` kontrollerar mot den råa prompten (för att fånga eventuell läckage).
 
 ### validate_response (Ren Python — ingen LLM)
 
@@ -113,7 +170,7 @@ Kontrollerar modellens svar mot tre kriterier: det får inte vara tomt, det mås
 
 ### Varför verktyg behövs
 
-Utan verktyg hade systemet varit ett enskilt prompt-in/svar-ut-anrop — ingen klassificering, ingen routing, ingen validering. Verktygen ger den miljöåterkoppling som gör agentloopen meningsfull. Klassificeringsverktyget är nödvändigt eftersom det bestämmer routingvägen. Valideringsverktyget är nödvändigt eftersom det ger återkopplingssignalen för iteration.
+Utan verktyg hade systemet varit ett enskilt prompt-in/svar-ut-anrop — ingen klassificering, ingen routing, ingen validering. Verktygen ger den miljöåterkoppling som gör agentloopen meningsfull. Klassificeringsverktyget är nödvändigt eftersom det bestämmer routingvägen. Valideringsverktyget är nödvändigt eftersom det ger återkopplingssignalen som utlöser eskalering.
 
 ---
 
@@ -127,23 +184,27 @@ Controller-loopen i `agent.py` följer mönstret planera → agera → observera
 
 **Observera:** Verktygets resultat läggs till i trajectory. Vid nästa iteration ser LLM:en den fullständiga historiken av åtgärder och resultat.
 
-**Reflektera:** LLM:en läser den uppdaterade trajectory:n och next hint (härledd från vad som hänt hittills) och utvärderar om uppgiften är slutförd.
+**Reflektera:** LLM:en läser den uppdaterade trajectory:n och next hint (härledd från vad som hänt hittills) och utvärderar om uppgiften är slutförd eller om eskalering behövs.
 
-**Revidera:** Om validering misslyckades kan LLM:en ändra strategi — försöka med samma modell igen, prova en annan modell eller ge upp efter max antal omförsök.
+**Revidera:** Om validering misslyckades för en prompt med hög känslighet eskalerar LLM:en — byter från den lokala modellen till molnmodellen med PII-maskning. Detta är ett genuint strategibyte, inte bara ett omförsök.
 
-### Happy path (4 steg)
+### Happy path — låg känslighet (4 steg)
 
-classify → route → validate (pass) → final
+classify → route till moln (rå) → validate (pass) → final
 
-### Retry path (6–8 steg)
+### Happy path — hög känslighet (4 steg)
 
-classify → route → validate (fail) → route (omförsök) → validate → ... → final
+classify → route till lokal (rå) → validate (pass) → final
 
-Med PII-maskning elimineras valideringsfel orsakade av PII-läckage i stort sett helt. Omförsök hanterar nu främst edge cases som tomma eller för korta svar.
+### Eskaleringsväg — hög känslighet med PII-läckage (6 steg)
+
+classify → route till lokal (rå) → validate (fail: PII läckte) → maskera PII → route till moln (maskad) → validate (pass) → final
+
+Detta är det centrala iterationsmönstret: agenten observerar ett valideringsfel, reflekterar över orsaken (PII-läckage från den lokala modellen) och reviderar sin strategi (eskalera till moln med maskning).
 
 ### Max omförsök uttömda
 
-Om validering misslyckas 3 gånger avslutar controller-loopen automatiskt och returnerar det bästa tillgängliga svaret med `validation_status: "fail"` i routing-sammanfattningen.
+Om validering misslyckas efter eskalering avslutar controller-loopen automatiskt och returnerar det bästa tillgängliga svaret med `validation_status: "fail"` i routing-sammanfattningen.
 
 ### Designbeslut
 
@@ -156,6 +217,8 @@ Orchestratorn använder `llama-3.1-8b-instant` med `temperature=0` för determin
 Tillstånd representeras som en trajectory — en lista med dictionaries, en per steg, som registrerar vilken åtgärd som utfördes, vilket verktyg som anropades, vilken input som gavs och vilket resultat som erhölls. Den fullständiga trajectory:n skickas till orchestrator-LLM:en vid varje iteration, vilket ger den full insyn i vad som har hänt.
 
 För att hantera kontextfönstrets begränsningar trunkerar funktionen `_compact_trajectory()` stora modellsvar (från `route_to_model`) till 300 tecken i LLM:ens vy. De fullständiga svaren bevaras internt för användning av valideringsverktyget och det slutgiltiga svaret.
+
+Controller-loopen spårar även eskaleringstillstånd: den räknar antalet `route_to_model`-anrop och läser den ursprungliga klassificeringsnivån från trajectory för att avgöra om maskning ska appliceras vid nästa route-anrop.
 
 ---
 
@@ -177,45 +240,45 @@ Alla 20 promptar passerade validering. Genomsnittligt antal steg per prompt: ~4,
 
 ### End-to-end-verifierade tester
 
-| Prompt | Nivå | Modell | Validering | Steg |
-|--------|------|--------|------------|------|
-| Personnummer | high | llama-3.1-8b-instant | pass | 4 |
-| E-postadress | high | llama-3.1-8b-instant | pass | 4 |
-| Telefonnummer | high | llama-3.1-8b-instant | pass | 4 |
-| Kreditkortsnummer | high | llama-3.1-8b-instant | pass | 4 |
-| Hemadress (nyckelord) | high | llama-3.1-8b-instant | pass | 4–6 |
-| Lön (nyckelord) | high | llama-3.1-8b-instant | pass | 4 |
-| Medicinsk diagnos (nyckelord) | high | llama-3.1-8b-instant | pass | 4 |
-| Lösenord (nyckelord) | high | llama-3.1-8b-instant | pass | 4 |
-| E-post + telefon kombinerat | high | llama-3.1-8b-instant | pass | 4 |
-| Hemadress (nyckelord) | high | llama-3.1-8b-instant | pass | 4 |
-| Enkel faktafråga | low | llama-3.1-70b-versatile | pass | 4 |
-| Utbildningsfråga | low | llama-3.1-70b-versatile | pass | 4 |
-| Kreativ förfrågan | low | llama-3.1-70b-versatile | pass | 4 |
-| Teknisk jämförelse | low | llama-3.1-70b-versatile | pass | 4 |
-| Matlagningsfråga | low | llama-3.1-70b-versatile | pass | 4 |
-| Historisk sammanfattning | low | llama-3.1-70b-versatile | pass | 4 |
-| Datavetenskapsfråga | low | llama-3.1-70b-versatile | pass | 4 |
-| Arkitekturfråga | low | llama-3.1-70b-versatile | pass | 4 |
-| Bokförslag | low | llama-3.1-70b-versatile | pass | 4 |
-| Matematisk formel | low | llama-3.1-70b-versatile | pass | 4 |
+| Prompt | Nivå | Initial modell | Eskalerad? | Validering | Steg |
+|--------|------|----------------|------------|------------|------|
+| Personnummer | high | llama-small (lokal) | nej | pass | 4 |
+| E-postadress | high | llama-small (lokal) | ibland | pass | 4–6 |
+| Telefonnummer | high | llama-small (lokal) | nej | pass | 4 |
+| Kreditkortsnummer | high | llama-small (lokal) | nej | pass | 4 |
+| Hemadress (nyckelord) | high | llama-small (lokal) | ibland | pass | 4–6 |
+| Lön (nyckelord) | high | llama-small (lokal) | nej | pass | 4 |
+| Medicinsk diagnos (nyckelord) | high | llama-small (lokal) | nej | pass | 4 |
+| Lösenord (nyckelord) | high | llama-small (lokal) | nej | pass | 4 |
+| E-post + telefon kombinerat | high | llama-small (lokal) | nej | pass | 4 |
+| Hemadress (nyckelord) | high | llama-small (lokal) | nej | pass | 4 |
+| Enkel faktafråga | low | llama-large (moln) | — | pass | 4 |
+| Utbildningsfråga | low | llama-large (moln) | — | pass | 4 |
+| Kreativ förfrågan | low | llama-large (moln) | — | pass | 4 |
+| Teknisk jämförelse | low | llama-large (moln) | — | pass | 4 |
+| Matlagningsfråga | low | llama-large (moln) | — | pass | 4 |
+| Historisk sammanfattning | low | llama-large (moln) | — | pass | 4 |
+| Datavetenskapsfråga | low | llama-large (moln) | — | pass | 4 |
+| Arkitekturfråga | low | llama-large (moln) | — | pass | 4 |
+| Bokförslag | low | llama-large (moln) | — | pass | 4 |
+| Matematisk formel | low | llama-large (moln) | — | pass | 4 |
 
-### Effekt av PII-maskning
+### Eskaleringsexempel: E-postadress-testet
 
-Testfallet med e-postadress demonstrerar effekten av PII-maskning:
+Prompten med e-postadress ("Skicka fakturan till anna.svensson@gmail.com tack.") kan följa två vägar beroende på hur den lokala modellen svarar:
 
-| | Utan maskning | Med maskning |
-|---|------|-------|
-| Vad modellen ser | `anna.svensson@gmail.com` | `[EMAIL]` |
-| Modellens svar nämner | E-postadressen bokstavligt | "den angivna e-postadressen" |
-| Validering | fail (PII läckte) → omförsök → fail | pass |
-| Steg | 7 (max omförsök uttömda) | 4 |
+| Väg | Flöde | Steg |
+|-----|-------|------|
+| Direkt pass | llama-small får rå prompt → svarar utan att eka e-postadressen → validate pass → final | 4 |
+| Eskalering | llama-small ekar e-postadressen i svaret → validate fail (PII läckte) → maskera PII → llama-large får "[EMAIL]" → validate pass → final | 6 |
+
+Båda vägarna resulterar i ett godkänt test. Eskaleringsvägen demonstrerar hela den agentiska cykeln: observera misslyckande → reflektera över orsak → revidera strategi.
 
 ### Baseline-jämförelse
 
 Baseline: alla promptar skickas till samma modell (`llama-3.1-70b-versatile`) utan klassificering, maskning eller validering.
 
-Baselinen har ingen routingmedvetenhet — varje prompt, oavsett känslighet, skickas till "moln"-modellen. Den har heller inget PII-maskerings- eller valideringssteg, vilket innebär att känslig data skickas till modellen i klartext och eventuell PII-läckage i svar passerar oupptäckt. Det agentiska arbetsflödet förhindrar detta genom att maskera PII innan routing och validera svar efteråt.
+Baselinen har ingen routingmedvetenhet — varje prompt, oavsett känslighet, skickas till molnmodellen med rå PII. Den har inget valideringssteg, vilket innebär att PII som läcker in i svar passerar oupptäckt. Det agentiska arbetsflödet förhindrar detta genom klassificering, lokal-först-routing för känslig data, och eskalering med maskning vid behov.
 
 ---
 
@@ -231,11 +294,12 @@ Baselinen har ingen routingmedvetenhet — varje prompt, oavsett känslighet, sk
 ### Fellägen och åtgärder
 
 | Felläge | Åtgärd |
-|---|---|
+|---------|--------|
 | LLM returnerar ogiltig JSON | Markdown-kodblockstrippning + JSON-fallback som härleder nästa åtgärd från pipeline-position |
 | LLM trunkerar modellsvar i JSON-output | `validate_response` fyller automatiskt i argument från lagrad trajectory istället för att förlita sig på LLM:ens eko |
-| PII läcker in i modellsvar | PII-maskning ersätter känslig data med platshållare innan prompten når modellen |
-| Validering misslyckas upprepade gånger | Automatisk avslutning efter 3 routingförsök, returnerar bästa tillgängliga svar med `validation_status: "fail"` |
+| PII läcker i lokal modells svar | Eskalering: maskera PII och dirigera om till molnmodell |
+| PII läcker i molnmodellens svar (efter maskning) | Automatisk avslutning med `validation_status: "fail"` — indikerar lucka i maskningsmönster |
+| Validering misslyckas upprepade gånger | Automatisk avslutning efter eskaleringsförsök, returnerar bästa tillgängliga svar |
 | Okänt verktygnamn | Loggas som fel i trajectory, loopen fortsätter |
 | LLM hoppar över klassificeringssteget | Systemprompt och next-hint-mekanismen upprätthåller korrekt ordning |
 
@@ -292,7 +356,7 @@ Kör alla 20 testpromptar genom agenten och baselinen, och sparar sedan resultat
 ## Teknikstack
 
 - **Python** med `langchain` och `langchain-groq`
-- **Groq API** — `llama-3.1-8b-instant` (orchestrator + säker modell), `llama-3.1-70b-versatile` (molnmodell)
+- **Groq API** — `llama-3.1-8b-instant` (orchestrator + lokal/säker modell), `llama-3.1-70b-versatile` (molnmodell)
 - **python-dotenv** för hantering av miljövariabler
 
 ---
