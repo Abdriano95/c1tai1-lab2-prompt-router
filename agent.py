@@ -13,7 +13,7 @@ import re
 from typing import Any
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
-from tools import sensitivity_classifier, route_to_model, validate_response
+from tools import sensitivity_classifier, route_to_model, validate_response, PII_PATTERNS
 from prompts import SYSTEM_PROMPT
 
 load_dotenv()
@@ -45,6 +45,23 @@ TOOLS = {
     "route_to_model": lambda args: route_to_model(args["prompt"], args["level"]),
     "validate_response": lambda args: validate_response(args["response"], args["original_prompt"]),
 }
+
+PII_LABELS = {
+    "personnummer": "[PERSONNUMMER]",
+    "epost": "[EMAIL]",
+    "telefonnummer": "[TELEFONNUMMER]",
+    "kreditkort": "[KREDITKORT]",
+    "ip_adress": "[IP-ADRESS]",
+    "postnummer": "[POSTNUMMER]",
+}
+
+def mask_pii(text: str) -> str:
+    """Replace PII matches with safe placeholders so the model never sees raw PII."""
+    masked = text
+    for pattern_name, pattern in PII_PATTERNS.items():
+        label = PII_LABELS.get(pattern_name, "[REDACTED]")
+        masked = re.sub(pattern, label, masked, flags=re.IGNORECASE)
+    return masked
 
 
 # ============================================================
@@ -290,6 +307,9 @@ def run_agent(user_prompt: str) -> dict:
                     "decision": decision
                 })
                 continue
+
+            if tool_name == "route_to_model":
+                tool_input["prompt"] = mask_pii(user_prompt)
 
             if tool_name == "validate_response":
                 latest_route = next(

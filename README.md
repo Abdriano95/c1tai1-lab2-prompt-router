@@ -290,3 +290,45 @@ c1tai1-lab2-prompt-router/
 ├── requirements.txt      # Python dependencies
 └── tools.py              # classify_sensitivity, route_to_model, validate_response
 ```
+
+============================================================
+EVALUATION: Running agent on all test prompts
+============================================================
+
+
+============================================================
+EVALUATION RESULTS
+============================================================
+Total prompts:      20
+Routing accuracy:   20/20 (100.0%)
+Validation passes:  19/20 (95.0%)
+Avg steps/prompt:   4.2
+
+
+============================================================
+BASELINE: All prompts → same model, no classification
+============================================================
+Test 1: pass | 0.67s
+Test 2: fail | 0.72s
+Test 3: pass | 0.21s
+Test 4: pass | 0.42s
+Test 5: fail | 0.69s
+Test 6: pass | 0.83s
+Test 7: pass | 1.04s
+Test 8: pass | 0.71s
+Test 9: fail | 0.35s
+Test 10: pass | 0.46s
+Test 11: pass | 0.05s
+Test 12: pass | 0.94s
+Test 13: pass | 0.30s
+Test 14: pass | 1.24s
+Test 15: pass | 1.18s
+Test 16: pass | 0.58s
+Test 17: pass | 1.43s
+Test 18: pass | 1.12s
+Test 19: pass | 0.62s
+Test 20: pass | 0.21s
+
+Baseline PII leaks: 0/20
+
+Results saved to evaluation_results.json
