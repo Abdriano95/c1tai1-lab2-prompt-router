@@ -14,6 +14,7 @@ PII_PATTERNS = {
     "telefonnummer": r"\b(?:\+46|0046|0)\s*\(?\d{1,3}\)?[\s-]?\d{2,3}[\s-]?\d{2,3}[\s-]?\d{2,3}\b",
     "kreditkort": r"\b(?:\d{4}[\s-]?){3}\d{4}\b|\b\d{4}[\s-]?\d{6}[\s-]?\d{5}\b",
     "ip_adress": r"\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b",
+    "postnummer": r"\b\d{3}\s?\d{2}\b",
 }
 
 # Känsliga nyckelord som indikerar personlig kontext
@@ -23,6 +24,8 @@ SENSITIVE_KEYWORDS = [
     "telefonnummer", "phone number", "mobilnummer", "mobile number",
     "kreditkort", "bankkort", "credit card", "bankkontonummer",
     "hemadress", "home address", "gatuadress", "adress",
+    "lön", "salary", "inkomst",
+    "diagnos", "diagnosen", "medicinsk", "sjukdom",
 ]
 
 def sensitivity_classifier(prompt: str) -> dict[str, Any]:
@@ -80,6 +83,24 @@ MODELS = {
     "llama-small": ChatGroq(model="llama-3.1-8b-instant", api_key=os.getenv("GROQ_API_KEY"))
 }
 
+PII_LABELS = {
+    "personnummer": "[PERSONNUMMER ANONYMISERAT]",
+    "epost": "[E-POST ANONYMISERAD]",
+    "telefonnummer": "[TELEFONNUMMER ANONYMISERAT]",
+    "kreditkort": "[KREDITKORT ANONYMISERAT]",
+    "ip_adress": "[IP-ADRESS ANONYMISERAD]",
+    "postnummer": "[POSTNUMMER ANONYMISERAT]",
+}
+
+
+def anonymize_response(response: str, original_prompt: str) -> str:
+    """Ersätter PII som hittades i prompten med anonymiserade etiketter i svaret."""
+    for pattern_name, pattern in PII_PATTERNS.items():
+        pii_values = re.findall(pattern, original_prompt, re.IGNORECASE)
+        for value in pii_values:
+            response = response.replace(value, PII_LABELS.get(pattern_name, "[ANONYMISERAT]"))
+    return response
+
 
 def route_to_model(prompt: str, level: str) -> dict:
     """
@@ -109,9 +130,10 @@ def route_to_model(prompt: str, level: str) -> dict:
         llm = MODELS.get(model_id, MODELS["llama-large"])
         result = llm.invoke(prompt)
 
+        sanitized = anonymize_response(result.content, prompt)
         return {
             "model_used": config["id"],
-            "response": result.content,
+            "response": sanitized,
             "routing_reason": config["reason"],
             "success": True
         }
