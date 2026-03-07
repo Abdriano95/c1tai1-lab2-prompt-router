@@ -17,7 +17,7 @@
     "routing_ok": false,
     "validation": "?",
     "steps": 10,
-    "time": 714.6
+    "time": 780.7
   },
   {
     "test": 3,
@@ -27,7 +27,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 88.9
+    "time": 69.7
   },
   {
     "test": 4,
@@ -37,7 +37,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 100.7
+    "time": 58.1
   },
   {
     "test": 5,
@@ -46,8 +46,8 @@
     "actual": "low",
     "routing_ok": false,
     "validation": "pass",
-    "steps": 4,
-    "time": 56.5
+    "steps": 5,
+    "time": 172.7
   },
   {
     "test": 6,
@@ -56,8 +56,8 @@
     "actual": "low",
     "routing_ok": false,
     "validation": "pass",
-    "steps": 5,
-    "time": 201.6
+    "steps": 4,
+    "time": 35.8
   },
   {
     "test": 7,
@@ -66,8 +66,8 @@
     "actual": "low",
     "routing_ok": false,
     "validation": "pass",
-    "steps": 4,
-    "time": 59.5
+    "steps": 5,
+    "time": 279.5
   },
   {
     "test": 8,
@@ -76,8 +76,8 @@
     "actual": "high",
     "routing_ok": true,
     "validation": "pass",
-    "steps": 4,
-    "time": 102.8
+    "steps": 5,
+    "time": 202.1
   },
   {
     "test": 9,
@@ -87,7 +87,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 6,
-    "time": 31.6
+    "time": 83.1
   },
   {
     "test": 10,
@@ -97,7 +97,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 32.1
+    "time": 65.7
   },
   {
     "test": 11,
@@ -107,7 +107,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 23.8
+    "time": 20.8
   },
   {
     "test": 12,
@@ -117,7 +117,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 58.0
+    "time": 37.9
   },
   {
     "test": 13,
@@ -127,7 +127,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 53.6
+    "time": 24.3
   },
   {
     "test": 14,
@@ -137,17 +137,17 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 63.0
+    "time": 48.7
   },
   {
     "test": 15,
     "desc": "Matlagningsfråga",
     "expected": "low",
-    "actual": "?",
-    "routing_ok": false,
-    "validation": "?",
-    "steps": 10,
-    "time": 589.5
+    "actual": "low",
+    "routing_ok": true,
+    "validation": "pass",
+    "steps": 9,
+    "time": 366.4
   },
   {
     "test": 16,
@@ -157,7 +157,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 7.4
+    "time": 7.6
   },
   {
     "test": 17,
@@ -167,7 +167,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 8.0
+    "time": 8.8
   },
   {
     "test": 18,
@@ -177,6 +177,6 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 8.9
+    "time": 9.1
   }
 ]
