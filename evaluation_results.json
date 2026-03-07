@@ -1,0 +1,112 @@
+[
+  {
+    "test": 1,
+    "desc": "Innehåller personnummer",
+    "expected": "high",
+    "actual": "high",
+    "routing_ok": true,
+    "validation": "pass",
+    "steps": 4,
+    "time": 24.3
+  },
+  {
+    "test": 2,
+    "desc": "Innehåller e-postadress",
+    "expected": "high",
+    "actual": "?",
+    "routing_ok": false,
+    "validation": "?",
+    "steps": 10,
+    "time": 780.7
+  },
+  {
+    "test": 3,
+    "desc": "Innehåller telefonnummer",
+    "expected": "high",
+    "actual": "high",
+    "routing_ok": true,
+    "validation": "pass",
+    "steps": 4,
+    "time": 69.7
+  },
+  {
+    "test": 4,
+    "desc": "Innehåller kreditkortsnummer",
+    "expected": "high",
+    "actual": "high",
+    "routing_ok": true,
+    "validation": "pass",
+    "steps": 4,
+    "time": 58.1
+  },
+  {
+    "test": 5,
+    "desc": "Innehåller hemadress (keyword)",
+    "expected": "high",
+    "actual": "low",
+    "routing_ok": false,
+    "validation": "pass",
+    "steps": 5,
+    "time": 172.7
+  },
+  {
+    "test": 6,
+    "desc": "Innehåller lön (keyword)",
+    "expected": "high",
+    "actual": "low",
+    "routing_ok": false,
+    "validation": "pass",
+    "steps": 4,
+    "time": 35.8
+  },
+  {
+    "test": 7,
+    "desc": "Innehåller medicinsk diagnos (keyword)",
+    "expected": "high",
+    "actual": "low",
+    "routing_ok": false,
+    "validation": "pass",
+    "steps": 5,
+    "time": 279.5
+  },
+  {
+    "test": 8,
+    "desc": "Nämner lösenord (keyword)",
+    "expected": "high",
+    "actual": "high",
+    "routing_ok": true,
+    "validation": "pass",
+    "steps": 5,
+    "time": 202.1
+  },
+  {
+    "test": 9,
+    "desc": "Innehåller både e-post och telefonnummer",
+    "expected": "high",
+    "actual": "high",
+    "routing_ok": true,
+    "validation": "pass",
+    "steps": 6,
+    "time": 83.1
+  },
+  {
+    "test": 10,
+    "desc": "Innehåller hemadress (keyword)",
+    "expected": "high",
+    "actual": "high",
+    "routing_ok": true,
+    "validation": "pass",
+    "steps": 4,
+    "time": 65.7
+  },
+  {
+    "test": 11,
+    "desc": "Enkel faktafråga",
+    "expected": "low",
+    "actual": "low",
+    "routing_ok": true,
+    "validation": "pass",
+    "steps": 4,
+    "time": 20.8
+  }
+]

@@ -9,6 +9,8 @@ Loopen kör tills agenten säger "final" eller max_steps nås.
 
 import json
 import os
+import re
+import time
 from typing import Any
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
@@ -27,7 +29,8 @@ MAX_STEPS = 10  # Säkerhetsgräns — agenten stoppas om den inte avslutar
 orchestrator_llm = ChatGroq(
     model="llama-3.1-8b-instant",
     api_key=os.getenv("GROQ_API_KEY") or "",
-    temperature=0
+    temperature=0,
+    max_tokens=2048,
 )
 
 # ============================================================
@@ -39,7 +42,7 @@ orchestrator_llm = ChatGroq(
 # ============================================================
 
 TOOLS = {
-    "sensitivity_classifier": lambda args: sensitivity_classifier(args["prompt"]),
+    "classify_sensitivity": lambda args: sensitivity_classifier(args["prompt"]),
     "route_to_model": lambda args: route_to_model(args["prompt"], args["level"]),
     "validate_response": lambda args: validate_response(args["response"], args["original_prompt"]),
 }
@@ -53,12 +56,98 @@ TOOLS = {
 # hela trajectory (allt som hänt hittills).
 # ============================================================
 
+def _derive_next_hint(trajectory: list[dict[str, Any]]) -> str:
+    """Analyze trajectory to tell the LLM what to do next based on the last tool called."""
+    tool_entries = [t for t in trajectory if t.get("action") == "tool"]
+    last_tool = tool_entries[-1] if tool_entries else None
+    tools_called = [t["tool_name"] for t in tool_entries]
+
+    classify_result = next(
+        (t["tool_result"] for t in tool_entries
+         if t["tool_name"] == "classify_sensitivity"), None
+    )
+
+    def _latest_route_result():
+        for t in reversed(tool_entries):
+            if t["tool_name"] == "route_to_model":
+                return t["tool_result"]
+        return {}
+
+    if not last_tool or "classify_sensitivity" not in tools_called:
+        return "NEXT: call classify_sensitivity."
+
+    if last_tool["tool_name"] == "classify_sensitivity":
+        level = classify_result.get("level", "high") if classify_result else "high"
+        return f'NEXT: call route_to_model with level="{level}".'
+
+    if last_tool["tool_name"] == "route_to_model":
+        route_res = _latest_route_result()
+        model_response = route_res.get("response", "")
+        return (
+            "NEXT: call validate_response with the model response.\n"
+            f"Full model response to validate: {model_response}"
+        )
+
+    if last_tool["tool_name"] == "validate_response":
+        status = last_tool.get("tool_result", {}).get("status")
+        if status == "pass":
+            route_res = _latest_route_result()
+            model_response = route_res.get("response", "")
+            model_used = route_res.get("model_used", "unknown")
+            level = classify_result.get("level", "unknown") if classify_result else "unknown"
+            return (
+                'NEXT: validation passed. You MUST return {"action": "final", ...} NOW.\n'
+                f"Use this as final_answer: {model_response}\n"
+                f"model_used: {model_used}\n"
+                f"sensitivity_level: {level}"
+            )
+        else:
+            route_count = sum(1 for t in tool_entries if t["tool_name"] == "route_to_model")
+            if route_count >= 3:
+                route_res = _latest_route_result()
+                return (
+                    'NEXT: max retries reached. Return {"action": "final", ...} now.\n'
+                    f"Use this as final_answer: {route_res.get('response', '')}\n"
+                    f"validation_status: fail"
+                )
+            level = classify_result.get("level", "high") if classify_result else "high"
+            return f'NEXT: validation failed. Retry route_to_model with level="{level}".'
+
+    return "NEXT: choose the appropriate action."
+
+
+def _compact_trajectory(trajectory: list[dict[str, Any]]) -> list[dict]:
+    """Create a token-efficient version of the trajectory for the LLM context."""
+    compact = []
+    for entry in trajectory:
+        c = {"step": entry["step"]}
+        if entry.get("error"):
+            c["error"] = entry["error"]
+        elif entry.get("action") == "tool":
+            c["tool"] = entry["tool_name"]
+            result = entry.get("tool_result", {})
+            if entry["tool_name"] == "route_to_model":
+                c["result"] = {
+                    "model_used": result.get("model_used"),
+                    "response": result.get("response", "")[:300],
+                    "success": result.get("success"),
+                }
+            else:
+                c["result"] = result
+        elif entry.get("action") == "final":
+            c["action"] = "final"
+        compact.append(c)
+    return compact
+
+
 def build_state_prompt(user_prompt: str, trajectory: list[dict[str, Any]], step: int) -> str:
+    hint = _derive_next_hint(trajectory)
+    compact = _compact_trajectory(trajectory)
     return (
         f"User prompt to process: {user_prompt}\n"
         f"Step: {step}/{MAX_STEPS}\n"
-        f"Trajectory so far: {json.dumps(trajectory, ensure_ascii=False)}\n"
-        "Choose the next action."
+        f"Trajectory so far: {json.dumps(compact, ensure_ascii=False)}\n"
+        f"{hint}"
     )
 
 
@@ -86,46 +175,122 @@ def run_agent(user_prompt: str) -> dict:
     trajectory = []
 
     for step in range(1, MAX_STEPS + 1):
+        if step > 1:
+            time.sleep(2)
+
         # --- 1. Bygg state-prompt ---
         state_prompt = build_state_prompt(user_prompt, trajectory, step)
 
-        # --- 2. Skicka till orchestrator-LLM ---
-        response = orchestrator_llm.invoke([
-            ("system", SYSTEM_PROMPT),
-            ("human", state_prompt)
-        ])
-        raw_output = response.content.strip()
+        # --- 2. Skicka till orchestrator-LLM (med rate-limit retry) ---
+        raw_output = None
+        for attempt in range(3):
+            try:
+                response = orchestrator_llm.invoke([
+                    ("system", SYSTEM_PROMPT),
+                    ("human", state_prompt)
+                ])
+                raw_output = response.content.strip()
+                break
+            except Exception as e:
+                if "429" in str(e) or "rate_limit" in str(e).lower():
+                    wait = (attempt + 1) * 10
+                    print(f"[Step {step}] Rate limited, waiting {wait}s...")
+                    time.sleep(wait)
+                else:
+                    raise
+        if raw_output is None:
+            print(f"[Step {step}] ERROR: LLM call failed after retries")
+            trajectory.append({"step": step, "error": "llm_call_failed"})
+            continue
 
         # --- 3. Logga rå output ---
         print(f"\n[Step {step}] Raw LLM output:")
         print(raw_output)
 
-        # --- 4. Parsa JSON ---
+        # --- 4. Parsa JSON (med stripping av markdown-kodblock) ---
+        cleaned = raw_output.strip()
+        md_match = re.search(r"```(?:json)?\s*\n?(.*?)\n?\s*```", cleaned, re.DOTALL)
+        if md_match:
+            cleaned = md_match.group(1).strip()
+
         try:
-            decision = json.loads(raw_output)
+            decision = json.loads(cleaned)
         except json.JSONDecodeError:
-            # LLM returnerade inte giltig JSON — spara fel, fortsätt
-            print(f"[Step {step}] ERROR: Invalid JSON")
-            trajectory.append({
-                "step": step,
-                "error": "invalid_json",
-                "raw_output": raw_output
-            })
-            continue
+            last_tool_entry = next(
+                (t for t in reversed(trajectory) if t.get("action") == "tool"), None
+            )
+            if last_tool_entry and last_tool_entry["tool_name"] == "route_to_model":
+                print(f"[Step {step}] JSON parse failed — auto-calling validate_response")
+                route_res = last_tool_entry["tool_result"]
+                decision = {
+                    "action": "tool",
+                    "tool_name": "validate_response",
+                    "tool_input": {
+                        "response": route_res.get("response", ""),
+                        "original_prompt": user_prompt,
+                    }
+                }
+            elif last_tool_entry and last_tool_entry["tool_name"] == "validate_response":
+                val_status = last_tool_entry.get("tool_result", {}).get("status")
+                if val_status == "pass":
+                    latest_route = next(
+                        (t["tool_result"] for t in reversed(trajectory)
+                         if t.get("tool_name") == "route_to_model"), {}
+                    )
+                    print(f"[Step {step}] JSON parse failed — auto-constructing final")
+                    decision = {
+                        "action": "final",
+                        "final_answer": latest_route.get("response", "No answer"),
+                        "routing_summary": {
+                            "sensitivity_level": next(
+                                (t["tool_result"].get("level") for t in trajectory
+                                 if t.get("tool_name") == "classify_sensitivity"), "unknown"),
+                            "model_used": latest_route.get("model_used", "unknown"),
+                            "validation_status": "pass",
+                            "retries": sum(1 for t in trajectory
+                                           if t.get("tool_name") == "route_to_model") - 1,
+                        }
+                    }
+                else:
+                    print(f"[Step {step}] ERROR: Invalid JSON")
+                    trajectory.append({
+                        "step": step, "error": "invalid_json",
+                        "raw_output": raw_output[:200]
+                    })
+                    continue
+            else:
+                print(f"[Step {step}] ERROR: Invalid JSON")
+                trajectory.append({
+                    "step": step, "error": "invalid_json",
+                    "raw_output": raw_output[:200]
+                })
+                continue
 
         action = decision.get("action")
 
         # --- 5a. Om "final" — vi är klara ---
         if action == "final":
             print(f"\n[Step {step}] FINAL ANSWER reached.")
+            latest_route = next(
+                (t["tool_result"] for t in reversed(trajectory)
+                 if t.get("tool_name") == "route_to_model"), None
+            )
+            final_answer = (
+                latest_route.get("response", "") if latest_route
+                else decision.get("final_answer", "No answer provided")
+            )
+            routing_summary = decision.get("routing_summary", {})
+            if latest_route:
+                routing_summary.setdefault("model_used", latest_route.get("model_used"))
+
             trajectory.append({
                 "step": step,
                 "action": "final",
                 "decision": decision
             })
             return {
-                "final_answer": decision.get("final_answer", "No answer provided"),
-                "routing_summary": decision.get("routing_summary", {}),
+                "final_answer": final_answer,
+                "routing_summary": routing_summary,
                 "trajectory": trajectory,
                 "steps_taken": step
             }
@@ -145,17 +310,35 @@ def run_agent(user_prompt: str) -> dict:
                 })
                 continue
 
-            # Kör tool
+            if tool_name == "validate_response":
+                latest_route = next(
+                    (t["tool_result"] for t in reversed(trajectory)
+                     if t.get("tool_name") == "route_to_model"), None
+                )
+                if latest_route:
+                    tool_input["response"] = latest_route.get("response", "")
+                    tool_input["original_prompt"] = user_prompt
+
             print(f"[Step {step}] Calling tool: {tool_name}")
-            try:
-                tool_result = TOOLS[tool_name](tool_input)
-            except Exception as e:
-                tool_result = {"error": str(e)}
-                print(f"[Step {step}] Tool error: {e}")
+            tool_result = None
+            for tool_attempt in range(3):
+                try:
+                    tool_result = TOOLS[tool_name](tool_input)
+                    break
+                except Exception as e:
+                    if "429" in str(e) or "rate_limit" in str(e).lower():
+                        wait = (tool_attempt + 1) * 15
+                        print(f"[Step {step}] Tool rate limited, waiting {wait}s...")
+                        time.sleep(wait)
+                    else:
+                        tool_result = {"error": str(e)}
+                        print(f"[Step {step}] Tool error: {e}")
+                        break
+            if tool_result is None:
+                tool_result = {"error": "rate_limit_exceeded_after_retries"}
 
             print(f"[Step {step}] Tool result: {json.dumps(tool_result, ensure_ascii=False)}")
 
-            # Spara i trajectory
             trajectory.append({
                 "step": step,
                 "action": "tool",
@@ -163,6 +346,34 @@ def run_agent(user_prompt: str) -> dict:
                 "tool_input": tool_input,
                 "tool_result": tool_result
             })
+
+            if (tool_name == "validate_response"
+                    and tool_result.get("status") == "fail"):
+                route_count = sum(
+                    1 for t in trajectory if t.get("tool_name") == "route_to_model"
+                )
+                if route_count >= 3:
+                    print(f"\n[Step {step}] Max retries exhausted — returning final.")
+                    latest_route = next(
+                        (t["tool_result"] for t in reversed(trajectory)
+                         if t.get("tool_name") == "route_to_model"), {}
+                    )
+                    classify_level = next(
+                        (t["tool_result"].get("level") for t in trajectory
+                         if t.get("tool_name") == "classify_sensitivity"), "unknown"
+                    )
+                    return {
+                        "final_answer": latest_route.get("response", "No answer"),
+                        "routing_summary": {
+                            "sensitivity_level": classify_level,
+                            "model_used": latest_route.get("model_used", "unknown"),
+                            "validation_status": "fail",
+                            "retries": route_count - 1,
+                        },
+                        "trajectory": trajectory,
+                        "steps_taken": step,
+                    }
+
             continue
 
         # --- 5c. Okänd action ---
@@ -188,7 +399,6 @@ def run_agent(user_prompt: str) -> dict:
 # ============================================================
 
 if __name__ == "__main__":
-    # Snabbtest: kör en prompt genom hela flödet
     test_prompt = "Mitt personnummer är 199505151234 och jag behöver hjälp med min deklaration."
     print(f"Running agent with prompt: {test_prompt}")
     print("=" * 60)
@@ -196,4 +406,4 @@ if __name__ == "__main__":
     print("=" * 60)
     print(f"\nFinal answer: {result['final_answer']}")
     print(f"Steps taken: {result['steps_taken']}")
-    print(f"Routing summary: {json.dumps(result.get('routing_summary', {}), indent=2)}")
+    print(f"Routing summary: {json.dumps(result.get('routing_summary', {}), indent=2, ensure_ascii=False)}")

@@ -8,10 +8,13 @@ Kör alla testprompts genom agenten och mäter:
 """
 
 import json
+import sys
 import time
-from tools import classify_sensitivity, route_to_model, validate_response
+from tools import sensitivity_classifier, route_to_model, validate_response
 from agent import run_agent
 from prompts import TEST_PROMPTS
+
+sys.stdout.reconfigure(encoding="utf-8")
 
 
 def run_evaluation():
@@ -27,6 +30,9 @@ def run_evaluation():
     print("=" * 60)
 
     for i, test_case in enumerate(TEST_PROMPTS):
+        if i > 0:
+            time.sleep(60)
+
         prompt = test_case["prompt"]
         expected = test_case["expected_level"]
         description = test_case["description"]
@@ -64,7 +70,7 @@ def run_evaluation():
             "final_answer": result.get("final_answer", "")[:100]
         })
 
-        print(f"Actual level: {actual_level} ({'✓' if routing_correct else '✗'})")
+        print(f"Actual level: {actual_level} ({'OK' if routing_correct else 'WRONG'})")
         print(f"Validation: {val_status}")
         print(f"Steps: {result.get('steps_taken', 0)} | Time: {elapsed:.2f}s")
 
@@ -96,6 +102,9 @@ def run_baseline():
     pii_leaks = 0
 
     for i, test_case in enumerate(TEST_PROMPTS):
+        if i > 0:
+            time.sleep(30)
+
         prompt = test_case["prompt"]
 
         start_time = time.time()
