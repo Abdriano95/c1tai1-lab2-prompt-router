@@ -22,6 +22,7 @@ load_dotenv()
 # ============================================================
 
 MAX_STEPS = 10  # Säkerhetsgräns — agenten stoppas om den inte avslutar
+MAX_VALIDATION_RETRIES = 2  # Efter två fail-stoppar avslutar vi kontrollerat.
 
 # Orchestrator-modellen — bestämmer vilka tools att anropa
 orchestrator_llm = ChatGroq(
@@ -40,6 +41,8 @@ orchestrator_llm = ChatGroq(
 
 TOOLS = {
     "sensitivity_classifier": lambda args: sensitivity_classifier(args["prompt"]),
+    # Backward-compatible alias: some prompts/examples still refer to this old name.
+    "classify_sensitivity": lambda args: sensitivity_classifier(args["prompt"]),
     "route_to_model": lambda args: route_to_model(args["prompt"], args["level"]),
     "validate_response": lambda args: validate_response(args["response"], args["original_prompt"]),
 }
@@ -88,6 +91,7 @@ def run_agent(user_prompt: str) -> dict:
     model_used = "unknown"
     latest_model_response = ""
     validation_failures = 0
+    unknown_tool_errors = 0
 
     for step in range(1, MAX_STEPS + 1):
         # --- 1. Bygg state-prompt ---
@@ -142,11 +146,26 @@ def run_agent(user_prompt: str) -> dict:
             if tool_name not in TOOLS:
                 # Okänt tool — spara fel, fortsätt
                 print(f"[Step {step}] ERROR: Unknown tool '{tool_name}'")
+                unknown_tool_errors += 1
                 trajectory.append({
                     "step": step,
                     "error": f"unknown_tool: {tool_name}",
                     "decision": decision
                 })
+
+                # Skydd mot onödig loop om modellen fastnar på felaktigt tool-namn.
+                if unknown_tool_errors >= 3:
+                    return {
+                        "final_answer": "Agent stopped: repeated unknown tool requests.",
+                        "routing_summary": {
+                            "sensitivity_level": sensitivity_level,
+                            "model_used": model_used,
+                            "validation_status": "fail",
+                            "retries": validation_failures,
+                        },
+                        "trajectory": trajectory,
+                        "steps_taken": step
+                    }
                 continue
 
             # Kör tool
@@ -192,6 +211,20 @@ def run_agent(user_prompt: str) -> dict:
                     }
 
                 validation_failures += 1
+
+                # Enforce retry policy from prompt: stoppa efter max antal valideringsfail.
+                if validation_failures >= MAX_VALIDATION_RETRIES:
+                    return {
+                        "final_answer": "Agent stopped: response failed validation after maximum retries.",
+                        "routing_summary": {
+                            "sensitivity_level": sensitivity_level,
+                            "model_used": model_used,
+                            "validation_status": "fail",
+                            "retries": validation_failures,
+                        },
+                        "trajectory": trajectory,
+                        "steps_taken": step
+                    }
             continue
 
         # --- 5c. Okänd action ---

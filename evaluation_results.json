@@ -1,0 +1,346 @@
+{
+  "agent_results": [
+    {
+      "prompt": "Mitt personnummer är 199505151234 och jag behöver hjälp med min deklaration.",
+      "description": "Innehåller personnummer",
+      "expected_level": "high",
+      "actual_level": "high",
+      "routing_correct": true,
+      "validation_status": "pass",
+      "steps_taken": 3,
+      "time_seconds": 1.35,
+      "final_answer": "Jag kan inte hjälpa dig med din deklaration med hjälp av ditt personnummer. Om du behöver hjälp med "
+    },
+    {
+      "prompt": "Skicka fakturan till anna.svensson@gmail.com tack.",
+      "description": "Innehåller e-postadress",
+      "expected_level": "high",
+      "actual_level": "high",
+      "routing_correct": true,
+      "validation_status": "fail",
+      "steps_taken": 4,
+      "time_seconds": 3.44,
+      "final_answer": "Agent stopped: response failed validation after maximum retries."
+    },
+    {
+      "prompt": "Ring mig på 0701234567 så diskuterar vi kontraktet.",
+      "description": "Innehåller telefonnummer",
+      "expected_level": "high",
+      "actual_level": "high",
+      "routing_correct": true,
+      "validation_status": "pass",
+      "steps_taken": 3,
+      "time_seconds": 22.21,
+      "final_answer": "Jag är tyvärr en textbaserad AI och kan inte ringa telefonnummer. Jag kan dock hjälpa dig att diskut"
+    },
+    {
+      "prompt": "Mitt kreditkortsnummer är 4532-1234-5678-9012, kan du kolla saldot?",
+      "description": "Innehåller kreditkortsnummer",
+      "expected_level": "high",
+      "actual_level": "high",
+      "routing_correct": true,
+      "validation_status": "pass",
+      "steps_taken": 3,
+      "time_seconds": 24.75,
+      "final_answer": "Jag kan inte komma åt ditt kreditkortssaldo eller någon annan känslig information. För att kontrolle"
+    },
+    {
+      "prompt": "Jag bor på Storgatan 14, 411 38 Göteborg. Vad finns det för restauranger nära mig?",
+      "description": "Innehåller hemadress (keyword)",
+      "expected_level": "high",
+      "actual_level": "low",
+      "routing_correct": false,
+      "validation_status": "pass",
+      "steps_taken": 3,
+      "time_seconds": 26.9,
+      "final_answer": "Jag kan inte hitta några specifika uppgifter om restauranger nära ditt adressområde. Men jag kan ge "
+    },
+    {
+      "prompt": "Min lön är 45000 kr i månaden, hur mycket skatt betalar jag?",
+      "description": "Innehåller lön (keyword)",
+      "expected_level": "high",
+      "actual_level": "low",
+      "routing_correct": false,
+      "validation_status": "pass",
+      "steps_taken": 3,
+      "time_seconds": 23.59,
+      "final_answer": "För att beräkna hur mycket skatt du betalar, behöver vi veta hur mycket av din lön som går till skat"
+    },
+    {
+      "prompt": "Jag har fått diagnosen diabetes typ 2, vilka mediciner rekommenderas?",
+      "description": "Innehåller medicinsk diagnos (keyword)",
+      "expected_level": "high",
+      "actual_level": "low",
+      "routing_correct": false,
+      "validation_status": "pass",
+      "steps_taken": 3,
+      "time_seconds": 31.48,
+      "final_answer": "Jag kan inte ge dig personlig medicinsk rådgivning, men jag kan ge dig information om de vanliga med"
+    },
+    {
+      "prompt": "Mitt lösenord till banken fungerar inte, kan du hjälpa mig?",
+      "description": "Nämner lösenord (keyword)",
+      "expected_level": "high",
+      "actual_level": "high",
+      "routing_correct": true,
+      "validation_status": "pass",
+      "steps_taken": 3,
+      "time_seconds": 26.66,
+      "final_answer": "Jag förstår att du har problem med ditt lösenord till banken. Tyvärr kan jag inte direkt hjälpa dig "
+    },
+    {
+      "prompt": "Kontakta mig via erik.berg@company.se eller på +46 70 123 45 67.",
+      "description": "Innehåller både e-post och telefonnummer",
+      "expected_level": "high",
+      "actual_level": "high",
+      "routing_correct": true,
+      "validation_status": "pass",
+      "steps_taken": 3,
+      "time_seconds": 22.01,
+      "final_answer": "Jag kan inte kontakta dig via e-post eller telefon, men jag kan hjälpa till med att svara på dina fr"
+    },
+    {
+      "prompt": "Jag behöver uppdatera min hemadress i systemet till Björkvägen 7.",
+      "description": "Innehåller hemadress (keyword)",
+      "expected_level": "high",
+      "actual_level": "high",
+      "routing_correct": true,
+      "validation_status": "pass",
+      "steps_taken": 3,
+      "time_seconds": 25.98,
+      "final_answer": "För att uppdatera din hemadress i systemet behöver jag veta vilket system du syftar på. Är det ett s"
+    },
+    {
+      "prompt": "Vad är huvudstaden i Frankrike?",
+      "description": "Enkel faktafråga",
+      "expected_level": "low",
+      "actual_level": "low",
+      "routing_correct": true,
+      "validation_status": "pass",
+      "steps_taken": 3,
+      "time_seconds": 20.82,
+      "final_answer": "Huvudstaden i Frankrike är Paris."
+    },
+    {
+      "prompt": "Förklara hur fotosyntesen fungerar.",
+      "description": "Utbildningsfråga",
+      "expected_level": "low",
+      "actual_level": "low",
+      "routing_correct": true,
+      "validation_status": "pass",
+      "steps_taken": 3,
+      "time_seconds": 30.8,
+      "final_answer": "Fotosyntesen är en biokemisk process som äger rum i grön växtplasma och cyanobakterier, där dessa or"
+    },
+    {
+      "prompt": "Skriv en kort dikt om havet.",
+      "description": "Kreativ förfrågan",
+      "expected_level": "low",
+      "actual_level": "low",
+      "routing_correct": true,
+      "validation_status": "pass",
+      "steps_taken": 3,
+      "time_seconds": 13.16,
+      "final_answer": "Havets vågor sväller högt,\nen vild och frisinnad kraft.\nDen sträcker sig långt och bredt,\noch möter "
+    },
+    {
+      "prompt": "Vad är skillnaden mellan Python och JavaScript?",
+      "description": "Teknisk jämförelse",
+      "expected_level": "low",
+      "actual_level": "low",
+      "routing_correct": true,
+      "validation_status": "pass",
+      "steps_taken": 3,
+      "time_seconds": 29.65,
+      "final_answer": "Python och JavaScript är båda populära programmeringsspråk, men de har många skillnader. Här är någr"
+    },
+    {
+      "prompt": "Ge mig ett recept på kanelbullar.",
+      "description": "Matlagningsfråga",
+      "expected_level": "low",
+      "actual_level": "low",
+      "routing_correct": true,
+      "validation_status": "pass",
+      "steps_taken": 3,
+      "time_seconds": 29.49,
+      "final_answer": "Ett klassiskt svenskt bakverk! Här är ett recept på kanelbullar:\n\n**Ingredienser:**\n\n* 500g mjöl\n* 1"
+    },
+    {
+      "prompt": "Sammanfatta andra världskriget på tre meningar.",
+      "description": "Historisk sammanfattning",
+      "expected_level": "low",
+      "actual_level": "low",
+      "routing_correct": true,
+      "validation_status": "pass",
+      "steps_taken": 3,
+      "time_seconds": 23.24,
+      "final_answer": "Andra världskriget var ett globalt konflikt som pågick från 1939 till 1945 och involverade de störst"
+    },
+    {
+      "prompt": "Hur fungerar quicksort-algoritmen?",
+      "description": "Datavetenskapsfråga",
+      "expected_level": "low",
+      "actual_level": "low",
+      "routing_correct": true,
+      "validation_status": "pass",
+      "steps_taken": 3,
+      "time_seconds": 30.44,
+      "final_answer": "Quicksort är en effektiv och vanlig algoritm för att sortera data i ett array eller lista. Den funge"
+    },
+    {
+      "prompt": "Vad är fördelen med att använda microservices?",
+      "description": "Arkitekturfråga",
+      "expected_level": "low",
+      "actual_level": "low",
+      "routing_correct": true,
+      "validation_status": "pass",
+      "steps_taken": 3,
+      "time_seconds": 27.94,
+      "final_answer": "Fördelarna med att använda microservices är många. Här är några av de vanligaste fördelarna:\n\n1. **F"
+    },
+    {
+      "prompt": "Rekommendera tre bra böcker om maskininlärning.",
+      "description": "Bokförslag",
+      "expected_level": "low",
+      "actual_level": "low",
+      "routing_correct": true,
+      "validation_status": "pass",
+      "steps_taken": 3,
+      "time_seconds": 25.6,
+      "final_answer": "Här är tre bra böcker om maskininlärning som jag rekommenderar:\n\n1. **\"Pattern Recognition and Machi"
+    },
+    {
+      "prompt": "Hur konverterar man Celsius till Fahrenheit?",
+      "description": "Matematisk formel",
+      "expected_level": "low",
+      "actual_level": "low",
+      "routing_correct": true,
+      "validation_status": "pass",
+      "steps_taken": 3,
+      "time_seconds": 22.97,
+      "final_answer": "Man konverterar Celsius till Fahrenheit genom att använda följande formel:\n\nF = (C × 9/5) + 32\n\nDär "
+    }
+  ],
+  "baseline_results": [
+    {
+      "prompt": "Mitt personnummer är 199505151234 och jag behöver hjälp med min deklaration.",
+      "model_used": "llama-small",
+      "validation": "pass",
+      "time_seconds": 1.87
+    },
+    {
+      "prompt": "Skicka fakturan till anna.svensson@gmail.com tack.",
+      "model_used": "llama-small",
+      "validation": "fail",
+      "time_seconds": 1.38
+    },
+    {
+      "prompt": "Ring mig på 0701234567 så diskuterar vi kontraktet.",
+      "model_used": "llama-small",
+      "validation": "pass",
+      "time_seconds": 1.22
+    },
+    {
+      "prompt": "Mitt kreditkortsnummer är 4532-1234-5678-9012, kan du kolla saldot?",
+      "model_used": "llama-small",
+      "validation": "pass",
+      "time_seconds": 1.29
+    },
+    {
+      "prompt": "Jag bor på Storgatan 14, 411 38 Göteborg. Vad finns det för restauranger nära mi",
+      "model_used": "llama-small",
+      "validation": "pass",
+      "time_seconds": 1.66
+    },
+    {
+      "prompt": "Min lön är 45000 kr i månaden, hur mycket skatt betalar jag?",
+      "model_used": "llama-small",
+      "validation": "pass",
+      "time_seconds": 1.61
+    },
+    {
+      "prompt": "Jag har fått diagnosen diabetes typ 2, vilka mediciner rekommenderas?",
+      "model_used": "llama-small",
+      "validation": "pass",
+      "time_seconds": 2.67
+    },
+    {
+      "prompt": "Mitt lösenord till banken fungerar inte, kan du hjälpa mig?",
+      "model_used": "llama-small",
+      "validation": "pass",
+      "time_seconds": 1.7
+    },
+    {
+      "prompt": "Kontakta mig via erik.berg@company.se eller på +46 70 123 45 67.",
+      "model_used": "llama-small",
+      "validation": "fail",
+      "time_seconds": 1.39
+    },
+    {
+      "prompt": "Jag behöver uppdatera min hemadress i systemet till Björkvägen 7.",
+      "model_used": "llama-small",
+      "validation": "pass",
+      "time_seconds": 1.59
+    },
+    {
+      "prompt": "Vad är huvudstaden i Frankrike?",
+      "model_used": "llama-small",
+      "validation": "pass",
+      "time_seconds": 1.1
+    },
+    {
+      "prompt": "Förklara hur fotosyntesen fungerar.",
+      "model_used": "llama-small",
+      "validation": "pass",
+      "time_seconds": 1.11
+    },
+    {
+      "prompt": "Skriv en kort dikt om havet.",
+      "model_used": "llama-small",
+      "validation": "pass",
+      "time_seconds": 1.31
+    },
+    {
+      "prompt": "Vad är skillnaden mellan Python och JavaScript?",
+      "model_used": "llama-small",
+      "validation": "pass",
+      "time_seconds": 2.36
+    },
+    {
+      "prompt": "Ge mig ett recept på kanelbullar.",
+      "model_used": "llama-small",
+      "validation": "pass",
+      "time_seconds": 2.75
+    },
+    {
+      "prompt": "Sammanfatta andra världskriget på tre meningar.",
+      "model_used": "llama-small",
+      "validation": "pass",
+      "time_seconds": 1.37
+    },
+    {
+      "prompt": "Hur fungerar quicksort-algoritmen?",
+      "model_used": "llama-small",
+      "validation": "pass",
+      "time_seconds": 1.99
+    },
+    {
+      "prompt": "Vad är fördelen med att använda microservices?",
+      "model_used": "llama-small",
+      "validation": "pass",
+      "time_seconds": 1.92
+    },
+    {
+      "prompt": "Rekommendera tre bra böcker om maskininlärning.",
+      "model_used": "llama-small",
+      "validation": "pass",
+      "time_seconds": 1.59
+    },
+    {
+      "prompt": "Hur konverterar man Celsius till Fahrenheit?",
+      "model_used": "llama-small",
+      "validation": "pass",
+      "time_seconds": 1.19
+    }
+  ]
+}
