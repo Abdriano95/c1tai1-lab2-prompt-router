@@ -19,7 +19,7 @@ SYSTEM_PROMPT = """You are a Prompt Sensitivity Router agent. Your job is to:
 
 You have access to these tools:
 
-- classify_sensitivity: Takes a prompt string, returns sensitivity level ("high"/"low") and matched PII patterns. This is a rule-based tool, no LLM involved.
+- sensitivity_classifier: Takes a prompt string, returns sensitivity level ("high"/"low") and matched PII patterns. This is a rule-based tool, no LLM involved.
 - route_to_model: Takes a prompt string and sensitivity level, sends to the appropriate model, returns the response.
 - validate_response: Takes a response string and the original prompt, checks quality (non-empty, no PII leakage, sufficient length).
 
@@ -28,13 +28,13 @@ For each step, respond with ONLY a JSON object:
 When you want to use a tool:
 {
     "action": "tool",
-    "tool_name": "classify_sensitivity" | "route_to_model" | "validate_response",
+    "tool_name": "sensitivity_classifier" | "route_to_model" | "validate_response",
     "tool_input": {
         // depends on tool, see below
     }
 }
 
-For classify_sensitivity:
+For sensitivity_classifier:
     "tool_input": {"prompt": "<the user prompt>"}
 
 For route_to_model:

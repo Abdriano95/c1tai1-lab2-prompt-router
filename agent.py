@@ -84,6 +84,10 @@ def run_agent(user_prompt: str) -> dict:
         dict med slutresultat, routing-info, och full trajectory.
     """
     trajectory = []
+    sensitivity_level = "unknown"
+    model_used = "unknown"
+    latest_model_response = ""
+    validation_failures = 0
 
     for step in range(1, MAX_STEPS + 1):
         # --- 1. Bygg state-prompt ---
@@ -155,6 +159,13 @@ def run_agent(user_prompt: str) -> dict:
 
             print(f"[Step {step}] Tool result: {json.dumps(tool_result, ensure_ascii=False)}")
 
+            # Uppdatera sammanfattningstillstånd för tidig exit efter validering.
+            if tool_name == "sensitivity_classifier":
+                sensitivity_level = tool_result.get("level", sensitivity_level)
+            elif tool_name == "route_to_model":
+                model_used = tool_result.get("model_used", model_used)
+                latest_model_response = tool_result.get("response", latest_model_response)
+
             # Spara i trajectory
             trajectory.append({
                 "step": step,
@@ -163,6 +174,24 @@ def run_agent(user_prompt: str) -> dict:
                 "tool_input": tool_input,
                 "tool_result": tool_result
             })
+
+            # Om valideringen lyckas, avsluta direkt istället för att kräva extra final-steg.
+            if tool_name == "validate_response":
+                validation_status = tool_result.get("status", "unknown")
+                if validation_status == "pass":
+                    return {
+                        "final_answer": tool_input.get("response", latest_model_response),
+                        "routing_summary": {
+                            "sensitivity_level": sensitivity_level,
+                            "model_used": model_used,
+                            "validation_status": "pass",
+                            "retries": validation_failures,
+                        },
+                        "trajectory": trajectory,
+                        "steps_taken": step
+                    }
+
+                validation_failures += 1
             continue
 
         # --- 5c. Okänd action ---
