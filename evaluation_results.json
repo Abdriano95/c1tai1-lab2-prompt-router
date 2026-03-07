@@ -17,7 +17,7 @@
     "routing_ok": false,
     "validation": "?",
     "steps": 10,
-    "time": 780.7
+    "time": 714.6
   },
   {
     "test": 3,
@@ -27,7 +27,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 69.7
+    "time": 88.9
   },
   {
     "test": 4,
@@ -37,7 +37,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 58.1
+    "time": 100.7
   },
   {
     "test": 5,
@@ -46,8 +46,8 @@
     "actual": "low",
     "routing_ok": false,
     "validation": "pass",
-    "steps": 5,
-    "time": 172.7
+    "steps": 4,
+    "time": 56.5
   },
   {
     "test": 6,
@@ -56,8 +56,8 @@
     "actual": "low",
     "routing_ok": false,
     "validation": "pass",
-    "steps": 4,
-    "time": 35.8
+    "steps": 5,
+    "time": 201.6
   },
   {
     "test": 7,
@@ -66,8 +66,8 @@
     "actual": "low",
     "routing_ok": false,
     "validation": "pass",
-    "steps": 5,
-    "time": 279.5
+    "steps": 4,
+    "time": 59.5
   },
   {
     "test": 8,
@@ -76,8 +76,8 @@
     "actual": "high",
     "routing_ok": true,
     "validation": "pass",
-    "steps": 5,
-    "time": 202.1
+    "steps": 4,
+    "time": 102.8
   },
   {
     "test": 9,
@@ -87,7 +87,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 6,
-    "time": 83.1
+    "time": 31.6
   },
   {
     "test": 10,
@@ -97,7 +97,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 65.7
+    "time": 32.1
   },
   {
     "test": 11,
@@ -107,7 +107,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 20.8
+    "time": 23.8
   },
   {
     "test": 12,
@@ -117,7 +117,7 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 37.9
+    "time": 58.0
   },
   {
     "test": 13,
@@ -127,6 +127,56 @@
     "routing_ok": true,
     "validation": "pass",
     "steps": 4,
-    "time": 24.3
+    "time": 53.6
+  },
+  {
+    "test": 14,
+    "desc": "Teknisk jämförelse",
+    "expected": "low",
+    "actual": "low",
+    "routing_ok": true,
+    "validation": "pass",
+    "steps": 4,
+    "time": 63.0
+  },
+  {
+    "test": 15,
+    "desc": "Matlagningsfråga",
+    "expected": "low",
+    "actual": "?",
+    "routing_ok": false,
+    "validation": "?",
+    "steps": 10,
+    "time": 589.5
+  },
+  {
+    "test": 16,
+    "desc": "Historisk sammanfattning",
+    "expected": "low",
+    "actual": "low",
+    "routing_ok": true,
+    "validation": "pass",
+    "steps": 4,
+    "time": 7.4
+  },
+  {
+    "test": 17,
+    "desc": "Datavetenskapsfråga",
+    "expected": "low",
+    "actual": "low",
+    "routing_ok": true,
+    "validation": "pass",
+    "steps": 4,
+    "time": 8.0
+  },
+  {
+    "test": 18,
+    "desc": "Arkitekturfråga",
+    "expected": "low",
+    "actual": "low",
+    "routing_ok": true,
+    "validation": "pass",
+    "steps": 4,
+    "time": 8.9
   }
 ]
