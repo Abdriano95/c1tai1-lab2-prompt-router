@@ -1,12 +1,13 @@
-# Session Log 2 — Evaluation & Rate Limit Debugging
+# Session Log 2 — Evaluation, Rate Limit Debugging & Cleanup
 
 **Datum:** 2026-03-07
+**Av:** Abdulla (med AI-assistans)
 
 ---
 
 ## Översikt
 
-Denna session fokuserade på att köra `evaluate.py` mot alla 20 testprompts, fixa problem som dök upp under körning, och kartlägga routing accuracy. Tre buggar fixades i `evaluate.py` och en fullständig klassificeringsanalys genomfördes.
+Denna session fokuserade på att köra `evaluate.py` mot alla 20 testprompts, fixa problem som dök upp under körning, och kartlägga routing accuracy. Tre buggar fixades i `evaluate.py`, rate-limit-hantering lades till och togs sedan bort efter uppgradering till betald Groq-nyckel.
 
 ---
 
@@ -58,29 +59,36 @@ sys.stdout.reconfigure(encoding="utf-8")
 
 ---
 
-## Problem 3: Ingen paus mellan tester → rate limit-krasch
+## Problem 3: Rate limit-hantering (tillagd → borttagen)
 
-### Symptom
-Evaluate.py körde 2-3 tester och dog sedan tyst — Groqs rate limit (6000 tokens/minut) överskreds.
+### Fas 1: Gratisnyckel — rate limits var ett problem
 
-### Fix
-La till pauser mellan varje test i evaluate.py:
-- 15 sekunders paus mellan agent-tester
-- 10 sekunders paus mellan baseline-tester
+Med Groqs gratisnivå (6000 tokens/minut) kraschade evaluate.py efter 2-3 tester. Följande lades till:
 
-```python
-for i, test_case in enumerate(TEST_PROMPTS):
-    if i > 0:
-        time.sleep(15)
-    ...
-```
+**I `agent.py`:**
+- Rate limit retry med exponentiell backoff (10s/20s/30s) runt orchestrator-LLM-anropet
+- Rate limit retry (15s/30s/45s) runt tool-anrop (route_to_model)
+- 2 sekunders paus mellan varje agent-steg
+
+**I `evaluate.py`:**
+- 60 sekunders paus mellan agent-tester
+- 30 sekunders paus mellan baseline-tester
+
+### Fas 2: Betald dev-nyckel — rate limits borttagna
+
+Efter uppgradering till betald Groq dev-key togs all rate limit-hantering bort:
+
+- **`agent.py`**: Alla `time.sleep()`, retry-loopar och rate-limit-meddelanden borttagna. Ren `invoke()` direkt. `import time` borttagen.
+- **`evaluate.py`**: Alla pauser mellan tester borttagna.
+
+Koden är nu ren och snabb — inga onödiga väntetider.
 
 ---
 
 ## Utvärderingsresultat
 
 ### Metod
-Eftersom Groqs gratisnivå (6000 TPM) gör det svårt att köra alla 20 tester sekventiellt i en process, kördes testningen i två delar:
+Testningen kördes i två delar:
 
 1. **Live end-to-end-tester** (test 1-4 + utvalda): Kördes genom `run_agent()` och verifierades fullt med classify → route → validate → final.
 2. **Klassificeringsanalys** (alla 20): Kördes direkt mot `sensitivity_classifier()` för att kartlägga exakt vilka prompts som matchas.
@@ -137,7 +145,8 @@ Alla tre beror på `tools.py`s `SENSITIVE_KEYWORDS`-lista, inte agentlogiken:
 
 | Fil | Ändring |
 |-----|---------|
-| `evaluate.py` | Fixad import (`classify_sensitivity` → `sensitivity_classifier`), Unicode-tecken, UTF-8 encoding, pauser mellan tester |
+| `agent.py` | Rate limit retry tillagd och sedan borttagen, `import time` borttagen |
+| `evaluate.py` | Fixad import (`classify_sensitivity` → `sensitivity_classifier`), Unicode-tecken, UTF-8 encoding, pauser tillagda och sedan borttagna |
 
 ### Nya filer
 
@@ -154,4 +163,4 @@ Alla tre beror på `tools.py`s `SENSITIVE_KEYWORDS`-lista, inte agentlogiken:
 - 7 av 10 high-sensitivity-prompts routas korrekt till `llama-large`
 - De 3 missarna beror på keyword-täckning i `tools.py`, inte agentlogik
 - Retry-mekanismen fungerar: email-testet visar PII-läcka → retry → slutligen pass
-- Groqs gratisnivå (6000 TPM) begränsar hur snabbt full evaluation kan köras
+- Rate limit-hantering lades till för gratisnyckel, sedan borttagen efter uppgradering till betald dev-key

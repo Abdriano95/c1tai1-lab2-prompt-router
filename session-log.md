@@ -112,6 +112,8 @@ La också till en 2-sekunders paus mellan varje steg i agent-loopen (`time.sleep
 ### Varför just denna lösning
 Exponentiell backoff är standardmönstret för rate limits. 3 försök med 10/20/30 sekunders väntan ger totalt 60 sekunders buffert, vilket täcker Groqs "try again in X seconds"-meddelande. Den lilla 2-sekunders pausen mellan steg förhindrar att vi överhuvudtaget når gränsen i normalfallet.
 
+> **Uppdatering:** Denna rate limit-hantering togs senare bort efter uppgradering till en betald Groq dev-key som inte har samma begränsningar. Koden gör nu ett direkt `invoke()`-anrop utan retry eller pauser.
+
 ---
 
 ## Problem 4: JSON-parsning misslyckas på lång output
