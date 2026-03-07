@@ -108,5 +108,25 @@
     "validation": "pass",
     "steps": 4,
     "time": 20.8
+  },
+  {
+    "test": 12,
+    "desc": "Utbildningsfråga",
+    "expected": "low",
+    "actual": "low",
+    "routing_ok": true,
+    "validation": "pass",
+    "steps": 4,
+    "time": 37.9
+  },
+  {
+    "test": 13,
+    "desc": "Kreativ förfrågan",
+    "expected": "low",
+    "actual": "low",
+    "routing_ok": true,
+    "validation": "pass",
+    "steps": 4,
+    "time": 24.3
   }
 ]
