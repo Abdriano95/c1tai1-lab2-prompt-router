@@ -57,18 +57,18 @@ Built for Lab 2 (Agentic Workflows) in the course *Tillämpning av AI-agenter i 
 │  │  Decides: which tool to call next                 │  │
 │  │  Stops: when "final" or max_steps reached         │  │
 │  └───────────────┬───────────────────────────────────┘  │
-│                   │                                     │
-│          ┌────────┼────────┐                            │
-│          ▼        ▼        ▼                            │
-│  ┌───────────┐ ┌─────────────┐ ┌──────────────────┐    │
-│  │ classify  │ │   route     │ │    validate      │    │
-│  │_sensitivity│ │ _to_model  │ │   _response      │    │
-│  │           │ │             │ │                   │    │
-│  │ Pure code │ │ Groq API   │ │ Pure code         │    │
-│  │ Regex/KW  │ │ call       │ │ String checks     │    │
-│  └───────────┘ └─────────────┘ └──────────────────┘    │
+│                  │                                      │
+│          ┌───────┼────────┐                             │
+│          ▼       ▼        ▼                             │
+│  ┌───────────┐ ┌─────────────┐ ┌──────────────────┐     │
+│  │ classify  │ │   route     │ │    validate      │     │
+│  │_sensitivity││ _to_model   │ │   _response      │     │
+│  │           │ │             │ │                  │     │
+│  │ Pure code │ │ Groq API    │ │ Pure code        │     │
+│  │ Regex/KW  │ │ call        │ │ String checks    │     │
+│  └───────────┘ └─────────────┘ └──────────────────┘     │
 │                                                         │
-│                    tools.py                              │
+│                    tools.py                             │
 └─────────────────────────────────────────────────────────┘
 ```
 
