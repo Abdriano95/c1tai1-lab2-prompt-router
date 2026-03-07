@@ -188,5 +188,15 @@
     "validation": "pass",
     "steps": 4,
     "time": 8.1
+  },
+  {
+    "test": 20,
+    "desc": "Matematisk formel",
+    "expected": "low",
+    "actual": "low",
+    "routing_ok": true,
+    "validation": "pass",
+    "steps": 4,
+    "time": 7.2
   }
 ]
