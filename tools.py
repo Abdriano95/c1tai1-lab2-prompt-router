@@ -30,13 +30,13 @@ SENSITIVE_KEYWORDS = [
 
 def sensitivity_classifier(prompt: str) -> dict[str, Any]:
     """
-    Classifies the sensitivity of a given prompt.
+    Klassificerar känslighetsnivån för en given prompt.
 
-    Parameters:
-    prompt (str): The input prompt to classify.
+    Parametrar:
+        prompt (str): Prompten som ska klassificeras.
 
-    Returns:
-    dict: A dictionary containing the sensitivity level, detected matches, and details.
+    Returnerar:
+        dict: En dictionary med känslighetsnivå, detekterade matchningar och detaljer.
     """
     matches = []
 
@@ -52,7 +52,7 @@ def sensitivity_classifier(prompt: str) -> dict[str, Any]:
         if re.search(kw_pattern, prompt, re.IGNORECASE):
             matches.append(f"keyword: {keyword}")
 
-    # Bestäm nivå
+    # Bestäm känslighetsnivå
     if matches:
         return {
             "level": "high",
@@ -88,17 +88,17 @@ def route_to_model(prompt: str, level: str) -> dict:
     """
     Routar prompten till rätt modell baserat på känslighetsnivå.
 
-    Args:
-        prompt: Den råa användarprompten.
+    Parametrar:
+        prompt: Användarprompten (kan vara maskerad vid hög känslighet).
         level: "high" eller "low" från classify_sensitivity.
 
-    Returns:
+    Returnerar:
         dict med:
             - model_used: vilken modell som användes
             - response: modellens svar
             - routing_reason: varför denna modell valdes
     """
-    #config = MODEL_CONFIG.get(level, MODEL_CONFIG["high"])  # default till säker
+    #config = MODEL_CONFIG.get(level, MODEL_CONFIG["high"])  # standard: säker modell
 
     mapping = {
         "high": {"id": "llama-large", "reason": "Känslig data kräver kraftfullare modell"},
@@ -123,43 +123,43 @@ def route_to_model(prompt: str, level: str) -> dict:
         return {
             "model_used": config["id"],
             "response": "",
-            "routing_reason": config["reason"], # Tror dennna kan tas bort, den är inte relevant om det blev ett error
+            "routing_reason": config["reason"],
             "success": False,
             "error": str(e)
         }
 
-MIN_RESPONSE_LENGTH = 10  # tecken
+MIN_RESPONSE_LENGTH = 10  # Minsta antal tecken för godkänt svar
 
-# Vanliga fraser när modellen vägrar svara
+# Vanliga fraser som indikerar att modellen vägrar svara
 REFUSAL_KEYWORDS = ["kan inte svara", "inte behörig", "as an ai model", "cannot fulfill"]
 
 def validate_response(response: str, original_prompt: str) -> dict:
     """
     Validerar att ett modellsvar uppfyller kvalitetskrav.
 
-    Args:
+    Parametrar:
         response: Modellens svar.
         original_prompt: Ursprungsprompten (för PII-läckagekontroll).
 
-    Returns:
+    Returnerar:
         dict med:
             - status: "pass" eller "fail"
             - reason: förklaring
     """
     clean_res = response.strip()
 
-    # Check 1: Tomt svar
+    # Kontroll 1: Tomt eller för kort svar
     if not clean_res:
         return {"status": "fail", "reason": "Response is empty"}
 
     if len(clean_res) < MIN_RESPONSE_LENGTH:
         return {"status": "fail", "reason": f"Response too short ({len(clean_res)} chars)"}
 
-    # 2. Check för vägran (Refusal)
+    # Kontroll 2: Vägran (modellen nekar att svara)
     if any(word in clean_res.lower() for word in REFUSAL_KEYWORDS):
         return {"status": "fail", "reason": "Model refused to answer"}
     
-    # Check 3: PII-läckage — kolla om känslig data från prompten dyker upp i svaret
+    # Kontroll 3: PII-läckage — kolla om känslig data från prompten dyker upp i svaret
     for pattern_name, pattern in PII_PATTERNS.items():
         in_prompt = set(re.findall(pattern, original_prompt, re.IGNORECASE))
         

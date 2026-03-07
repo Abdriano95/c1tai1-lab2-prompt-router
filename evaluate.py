@@ -1,8 +1,8 @@
 """
-Evaluation-script för Prompt Sensitivity Router.
+Evalueringsscript för Prompt Sensitivity Router.
 Kör alla testprompts genom agenten och mäter:
 - Routing accuracy (routades känsliga prompts korrekt?)
-- Validation pass rate (andel svar som passerar validering)
+- Valideringsandel (andel svar som passerar validering)
 - Antal steg per prompt (effektivitet)
 - Jämförelse mot baseline (allt till samma modell utan klassificering)
 """
@@ -18,7 +18,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 
 
 def run_evaluation():
-    """Kör alla testprompts genom agenten och samla resultat."""
+    """Kör alla testprompts genom agenten och samlar resultat."""
 
     results = []
     correct_routing = 0
@@ -42,13 +42,13 @@ def run_evaluation():
         result = run_agent(prompt)
         elapsed = time.time() - start_time
 
-        # Kolla om routing var korrekt
+        # Kontrollera om routing var korrekt
         actual_level = result.get("routing_summary", {}).get("sensitivity_level", "unknown")
         routing_correct = actual_level == expected
         if routing_correct:
             correct_routing += 1
 
-        # Kolla validation status
+        # Kontrollera valideringsstatus
         val_status = result.get("routing_summary", {}).get("validation_status", "unknown")
         if val_status == "pass":
             validation_passes += 1
@@ -71,7 +71,7 @@ def run_evaluation():
         print(f"Validation: {val_status}")
         print(f"Steps: {result.get('steps_taken', 0)} | Time: {elapsed:.2f}s")
 
-    # Sammanställning
+    # Skriv ut sammanställning
     total = len(TEST_PROMPTS)
     print("\n" + "=" * 60)
     print("EVALUATION RESULTS")
@@ -87,8 +87,8 @@ def run_evaluation():
 
 def run_baseline():
     """
-    Baseline: skicka alla prompts till samma modell utan klassificering.
-    Jämförelseunderlag för evaluation.
+    Baseline: skickar alla prompts till samma modell utan klassificering.
+    Används som jämförelseunderlag mot agentens resultat.
     """
 
     print("\n" + "=" * 60)
@@ -102,11 +102,11 @@ def run_baseline():
         prompt = test_case["prompt"]
 
         start_time = time.time()
-        # Skicka allt till "moln"-modellen utan klassificering
+        # Skicka direkt till lilla modellen utan klassificering
         result = route_to_model(prompt, "low")
         elapsed = time.time() - start_time
 
-        # Validera ändå
+        # Validera svaret ändå (för att jämföra med agenten)
         validation = validate_response(result.get("response", ""), prompt)
 
         if validation["status"] == "fail" and "PII leaked" in validation["reason"]:
@@ -126,17 +126,17 @@ def run_baseline():
 
 
 if __name__ == "__main__":
-    # Kör agent-evaluation
+    # Kör agent-evaluering
     agent_results = run_evaluation()
 
-    # Kör baseline
+    # Kör baseline-jämförelse
     baseline_results = run_baseline()
 
-    # Spara resultat till fil
+    # Spara alla resultat till JSON-fil
     with open("evaluation_results.json", "w", encoding="utf-8") as f:
         json.dump({
             "agent_results": agent_results,
             "baseline_results": baseline_results
         }, f, ensure_ascii=False, indent=2)
 
-    print(f"\nResults saved to evaluation_results.json")
+    print(f"\nResultat sparade till evaluation_results.json")

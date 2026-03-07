@@ -56,7 +56,7 @@ PII_LABELS = {
 }
 
 def mask_pii(text: str) -> str:
-    """Replace PII matches with safe placeholders so the model never sees raw PII."""
+    """Ersätter PII-matchningar med säkra platshållare så modellen aldrig ser rå känslig data."""
     masked = text
     for pattern_name, pattern in PII_PATTERNS.items():
         label = PII_LABELS.get(pattern_name, "[REDACTED]")
@@ -73,7 +73,7 @@ def mask_pii(text: str) -> str:
 # ============================================================
 
 def _derive_next_hint(trajectory: list[dict[str, Any]]) -> str:
-    """Analyze trajectory to tell the LLM what to do next based on the last tool called."""
+    """Analyserar trajectory och ger LLM:en en ledtråd om vad nästa steg ska vara."""
     tool_entries = [t for t in trajectory if t.get("action") == "tool"]
     last_tool = tool_entries[-1] if tool_entries else None
     tools_called = [t["tool_name"] for t in tool_entries]
@@ -133,7 +133,7 @@ def _derive_next_hint(trajectory: list[dict[str, Any]]) -> str:
 
 
 def _compact_trajectory(trajectory: list[dict[str, Any]]) -> list[dict]:
-    """Create a token-efficient version of the trajectory for the LLM context."""
+    """Skapar en tokeneffektiv version av trajectory för LLM-kontexten."""
     compact = []
     for entry in trajectory:
         c = {"step": entry["step"]}
@@ -205,7 +205,7 @@ def run_agent(user_prompt: str) -> dict:
         print(f"\n[Step {step}] Raw LLM output:")
         print(raw_output)
 
-        # --- 4. Parsa JSON (med stripping av markdown-kodblock) ---
+        # --- 4. Parsa JSON (strippar eventuella markdown-kodblock) ---
         cleaned = raw_output.strip()
         md_match = re.search(r"```(?:json)?\s*\n?(.*?)\n?\s*```", cleaned, re.DOTALL)
         if md_match:
@@ -218,7 +218,7 @@ def run_agent(user_prompt: str) -> dict:
                 (t for t in reversed(trajectory) if t.get("action") == "tool"), None
             )
             if last_tool_entry and last_tool_entry["tool_name"] == "route_to_model":
-                print(f"[Step {step}] JSON parse failed — auto-calling validate_response")
+                print(f"[Step {step}] JSON-parsning misslyckades — anropar validate_response automatiskt")
                 route_res = last_tool_entry["tool_result"]
                 decision = {
                     "action": "tool",
@@ -235,7 +235,7 @@ def run_agent(user_prompt: str) -> dict:
                         (t["tool_result"] for t in reversed(trajectory)
                          if t.get("tool_name") == "route_to_model"), {}
                     )
-                    print(f"[Step {step}] JSON parse failed — auto-constructing final")
+                    print(f"[Step {step}] JSON-parsning misslyckades — konstruerar final-svar automatiskt")
                     decision = {
                         "action": "final",
                         "final_answer": latest_route.get("response", "No answer"),
@@ -250,14 +250,14 @@ def run_agent(user_prompt: str) -> dict:
                         }
                     }
                 else:
-                    print(f"[Step {step}] ERROR: Invalid JSON")
+                    print(f"[Step {step}] FEL: Ogiltig JSON")
                     trajectory.append({
                         "step": step, "error": "invalid_json",
                         "raw_output": raw_output[:200]
                     })
                     continue
             else:
-                print(f"[Step {step}] ERROR: Invalid JSON")
+                print(f"[Step {step}] FEL: Ogiltig JSON")
                 trajectory.append({
                     "step": step, "error": "invalid_json",
                     "raw_output": raw_output[:200]
@@ -266,7 +266,7 @@ def run_agent(user_prompt: str) -> dict:
 
         action = decision.get("action")
 
-        # --- 5a. Om "final" — vi är klara ---
+        # --- 5a. "final" — agenten är klar ---
         if action == "final":
             print(f"\n[Step {step}] FINAL ANSWER reached.")
             latest_route = next(
@@ -293,14 +293,13 @@ def run_agent(user_prompt: str) -> dict:
                 "steps_taken": step
             }
 
-        # --- 5b. Om "tool" — kör rätt tool ---
+        # --- 5b. "tool" — kör rätt tool ---
         if action == "tool":
             tool_name = decision.get("tool_name")
             tool_input = decision.get("tool_input", {})
 
             if tool_name not in TOOLS:
-                # Okänt tool — spara fel, fortsätt
-                print(f"[Step {step}] ERROR: Unknown tool '{tool_name}'")
+                print(f"[Step {step}] FEL: Okänt tool '{tool_name}'")
                 trajectory.append({
                     "step": step,
                     "error": f"unknown_tool: {tool_name}",
@@ -325,7 +324,7 @@ def run_agent(user_prompt: str) -> dict:
                 tool_result = TOOLS[tool_name](tool_input)
             except Exception as e:
                 tool_result = {"error": str(e)}
-                print(f"[Step {step}] Tool error: {e}")
+                print(f"[Step {step}] Tool-fel: {e}")
 
             print(f"[Step {step}] Tool result: {json.dumps(tool_result, ensure_ascii=False)}")
 
@@ -343,7 +342,7 @@ def run_agent(user_prompt: str) -> dict:
                     1 for t in trajectory if t.get("tool_name") == "route_to_model"
                 )
                 if route_count >= 3:
-                    print(f"\n[Step {step}] Max retries exhausted — returning final.")
+                    print(f"\n[Step {step}] Max antal retries uppnått — returnerar slutsvar.")
                     latest_route = next(
                         (t["tool_result"] for t in reversed(trajectory)
                          if t.get("tool_name") == "route_to_model"), {}
@@ -367,7 +366,7 @@ def run_agent(user_prompt: str) -> dict:
             continue
 
         # --- 5c. Okänd action ---
-        print(f"[Step {step}] ERROR: Unknown action '{action}'")
+        print(f"[Step {step}] FEL: Okänd action '{action}'")
         trajectory.append({
             "step": step,
             "error": f"unknown_action: {action}",
@@ -375,9 +374,9 @@ def run_agent(user_prompt: str) -> dict:
         })
 
     # Om vi når hit har max_steps överskridits
-    print(f"\nStopped after {MAX_STEPS} steps without final answer.")
+    print(f"\nStoppad efter {MAX_STEPS} steg utan slutgiltigt svar.")
     return {
-        "final_answer": "Agent stopped: max steps reached without final answer.",
+        "final_answer": "Agenten stoppades: max antal steg nåddes utan slutgiltigt svar.",
         "routing_summary": {},
         "trajectory": trajectory,
         "steps_taken": MAX_STEPS
@@ -385,7 +384,7 @@ def run_agent(user_prompt: str) -> dict:
 
 
 # ============================================================
-# Entrypoint
+# Startpunkt
 # ============================================================
 
 if __name__ == "__main__":
