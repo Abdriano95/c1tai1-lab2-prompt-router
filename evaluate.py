@@ -10,7 +10,7 @@ Kör alla testprompts genom agenten och mäter:
 import json
 import sys
 import time
-from tools import sensitivity_classifier, route_to_model, validate_response
+from tools import classify_sensitivity, route_to_model, validate_response
 from agent import run_agent
 from prompts import TEST_PROMPTS
 

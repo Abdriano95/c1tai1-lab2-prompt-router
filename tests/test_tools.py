@@ -1,6 +1,6 @@
 import json
 
-from tools import sensitivity_classifier, route_to_model, validate_response
+from tools import classify_sensitivity, route_to_model, validate_response
 
 if __name__ == "__main__":
     print("=========================================")
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     for i, test_text in enumerate(test_cases, 1):
         print(f"\nTest {i}: \"{test_text}\"")
         
-        result = sensitivity_classifier(test_text)
+        result = classify_sensitivity(test_text)
         
         print(json.dumps(result, indent=2, ensure_ascii=False))
 

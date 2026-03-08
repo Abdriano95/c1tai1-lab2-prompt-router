@@ -13,7 +13,7 @@ import re
 from typing import Any
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
-from tools import sensitivity_classifier, route_to_model, validate_response, PII_PATTERNS
+from tools import classify_sensitivity, route_to_model, validate_response, PII_PATTERNS
 from prompts import SYSTEM_PROMPT
 
 load_dotenv()
@@ -41,7 +41,7 @@ orchestrator_llm = ChatGroq(
 # ============================================================
 
 TOOLS = {
-    "classify_sensitivity": lambda args: sensitivity_classifier(args["prompt"]),
+    "classify_sensitivity": lambda args: classify_sensitivity(args["prompt"]),
     "route_to_model": lambda args: route_to_model(args["prompt"], args["level"]),
     "validate_response": lambda args: validate_response(args["response"], args["original_prompt"]),
 }

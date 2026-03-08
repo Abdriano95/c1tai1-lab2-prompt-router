@@ -28,7 +28,7 @@ SENSITIVE_KEYWORDS = [
     "diagnos", "diagnosen", "medicinsk", "sjukdom",
 ]
 
-def sensitivity_classifier(prompt: str) -> dict[str, Any]:
+def classify_sensitivity(prompt: str) -> dict[str, Any]:
     """
     Klassificerar känslighetsnivån för en given prompt.
 
@@ -66,18 +66,6 @@ def sensitivity_classifier(prompt: str) -> dict[str, Any]:
             "details": "No PII detected"
         }
 
-
-# MODEL_CONFIG = {
-#     "high": {
-#         "model": "llama-3.1-8b-instant",
-#         "reason": "high sensitivity → secure model"
-#     },
-#     "low": {
-#         "model": "llama-3.1-70b-versatile",
-#         "reason": "low sensitivity → cloud model"
-#     }
-# }
-
 MODELS = {
     "llama-large": ChatGroq(model="llama-3.3-70b-versatile", api_key=os.getenv("GROQ_API_KEY")),
     "llama-small": ChatGroq(model="llama-3.1-8b-instant", api_key=os.getenv("GROQ_API_KEY"))
@@ -98,7 +86,6 @@ def route_to_model(prompt: str, level: str) -> dict:
             - response: modellens svar
             - routing_reason: varför denna modell valdes
     """
-    #config = MODEL_CONFIG.get(level, MODEL_CONFIG["high"])  # standard: säker modell
 
     mapping = {
         "high": {"id": "llama-small", "reason": "Känslig data — använder lokal/säker modell"},
