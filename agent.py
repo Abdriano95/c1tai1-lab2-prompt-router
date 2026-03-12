@@ -407,11 +407,26 @@ def run_agent(user_prompt: str) -> dict:
 # ============================================================
 
 if __name__ == "__main__":
-    test_prompt = "Mitt personnummer är 199505151234 och jag behöver hjälp med min deklaration."
-    print(f"Running agent with prompt: {test_prompt}")
-    print("=" * 60)
-    result = run_agent(test_prompt)
-    print("=" * 60)
-    print(f"\nFinal answer: {result['final_answer']}")
-    print(f"Steps taken: {result['steps_taken']}")
-    print(f"Routing summary: {json.dumps(result.get('routing_summary', {}), indent=2, ensure_ascii=False)}")
+    while True: 
+        prompt = input("Ange en prompt att köra agenten på: ")
+        if prompt in ["exit", "quit", "avsluta", "x"]:
+            print("Avslutar.")
+            break
+        print(f"Running agent with prompt: {prompt}")
+        result = run_agent(prompt)
+        print("=" * 60)
+        print(f"\nFinal answer: {result['final_answer']}")
+        print(f"Steps taken: {result['steps_taken']}")
+        print(f"Routing summary: {json.dumps(result.get('routing_summary', {}), indent=2, ensure_ascii=False)}")
+
+
+
+    
+    # test_prompt = "Mitt personnummer är 199505151234 och jag behöver hjälp med min deklaration."
+    # print(f"Running agent with prompt: {test_prompt}")
+    # print("=" * 60)
+    # result = run_agent(test_prompt)
+    # print("=" * 60)
+    # print(f"\nFinal answer: {result['final_answer']}")
+    # print(f"Steps taken: {result['steps_taken']}")
+    # print(f"Routing summary: {json.dumps(result.get('routing_summary', {}), indent=2, ensure_ascii=False)}")
