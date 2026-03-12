@@ -412,6 +412,9 @@ if __name__ == "__main__":
         if prompt in ["exit", "quit", "avsluta", "x"]:
             print("Avslutar.")
             break
+        if prompt in ["test", "testa"]:
+            prompt = "Mitt personnummer är 199505151234 och jag behöver hjälp med min deklaration."
+            print(f"Testprompt: {prompt}")
         print(f"Running agent with prompt: {prompt}")
         result = run_agent(prompt)
         print("=" * 60)
