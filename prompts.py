@@ -19,16 +19,20 @@ PIPELINE (follow this exact order):
   Step 3 → call validate_response
   Step 4 → if "pass": return action "final"
            if "fail" AND original level was "high":
-             escalate by calling route_to_model with level="low"
-             (PII will be masked automatically, the cloud model gets a safe prompt)
-  Step 5 → call validate_response on the escalated response
-  Step 6 → return action "final"
+             escalate by calling mask_pii first
+  Step 5 → call route_to_model with level="low" (prompt taken from mask_pii result)
+  Step 6 → call validate_response on the escalated response
+  Step 7 → return action "final"
 
 TOOLS:
 
 classify_sensitivity — classifies the prompt for PII.
   Input:  {"prompt": "<the user prompt>"}
   Output: {"level": "high"|"low", "matches": [...], "details": "..."}
+
+mask_pii — masks PII in text with placeholders before cloud escalation.
+  Input:  {"text": "<text to mask>"}
+  Output: {"masked_text": "..."}
 
 route_to_model — sends the prompt to the appropriate LLM.
   Input:  {"prompt": "<the user prompt>", "level": "high"|"low"}
@@ -48,7 +52,7 @@ To return the final answer (MUST do this once validate_response returns "pass"):
 
 CRITICAL RULES:
 - As soon as validate_response returns status "pass", you MUST return action "final" on the very next step.
-- When escalating (validation failed for high-sensitivity prompt), call route_to_model again with level="low".
+- When escalating (validation failed for high-sensitivity prompt), call mask_pii first, then route_to_model with level="low".
 - Never skip classify_sensitivity.
 - Never output anything other than a single JSON object.
 """

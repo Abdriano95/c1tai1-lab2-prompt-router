@@ -13,7 +13,7 @@ import re
 from typing import Any
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
-from tools import classify_sensitivity, route_to_model, validate_response, PII_PATTERNS
+from tools import classify_sensitivity, route_to_model, validate_response, mask_pii
 from prompts import SYSTEM_PROMPT
 
 load_dotenv()
@@ -44,25 +44,8 @@ TOOLS = {
     "classify_sensitivity": lambda args: classify_sensitivity(args["prompt"]),
     "route_to_model": lambda args: route_to_model(args["prompt"], args["level"]),
     "validate_response": lambda args: validate_response(args["response"], args["original_prompt"]),
+    "mask_pii": lambda args: mask_pii(args["text"]),
 }
-
-PII_LABELS = {
-    "personnummer": "[PERSONNUMMER]",
-    "epost": "[EMAIL]",
-    "telefonnummer": "[TELEFONNUMMER]",
-    "kreditkort": "[KREDITKORT]",
-    "ip_adress": "[IP-ADRESS]",
-    "postnummer": "[POSTNUMMER]",
-}
-
-def mask_pii(text: str) -> str:
-    """Ersätter PII-matchningar med säkra platshållare så modellen aldrig ser rå känslig data."""
-    masked = text
-    for pattern_name, pattern in PII_PATTERNS.items():
-        label = PII_LABELS.get(pattern_name, "[REDACTED]")
-        masked = re.sub(pattern, label, masked, flags=re.IGNORECASE)
-    return masked
-
 
 # ============================================================
 # State builder
@@ -131,11 +114,16 @@ def _derive_next_hint(trajectory: list[dict[str, Any]]) -> str:
 
             if orig_level == "high" and route_count == 1:
                 return (
-                    'NEXT: validation failed. Escalate: call route_to_model with level="low" '
-                    "(PII will be masked automatically, cloud model gets a safe prompt)."
+                    'NEXT: validation failed. Escalate: call mask_pii first with the user prompt.'
                 )
 
             return 'NEXT: validation failed. Retry route_to_model with the same level.'
+
+    if last_tool["tool_name"] == "mask_pii":
+        return (
+            'NEXT: call route_to_model with level="low" '
+            "(prompt will be taken from mask_pii result)."
+        )
 
     return "NEXT: choose the appropriate action."
 
@@ -155,6 +143,10 @@ def _compact_trajectory(trajectory: list[dict[str, Any]]) -> list[dict]:
                     "model_used": result.get("model_used"),
                     "response": result.get("response", "")[:300],
                     "success": result.get("success"),
+                }
+            elif entry["tool_name"] == "mask_pii":
+                c["result"] = {
+                    "masked_text": result.get("masked_text", "")[:300],
                 }
             else:
                 c["result"] = result
@@ -225,7 +217,16 @@ def run_agent(user_prompt: str) -> dict:
             last_tool_entry = next(
                 (t for t in reversed(trajectory) if t.get("action") == "tool"), None
             )
-            if last_tool_entry and last_tool_entry["tool_name"] == "route_to_model":
+            if last_tool_entry and last_tool_entry["tool_name"] == "mask_pii":
+                mask_res = last_tool_entry.get("tool_result", {})
+                masked_text = mask_res.get("masked_text", mask_pii(user_prompt)["masked_text"])
+                print(f"[Step {step}] JSON-parsning misslyckades — anropar route_to_model automatiskt (eskalering)")
+                decision = {
+                    "action": "tool",
+                    "tool_name": "route_to_model",
+                    "tool_input": {"prompt": masked_text, "level": "low"},
+                }
+            elif last_tool_entry and last_tool_entry["tool_name"] == "route_to_model":
                 print(f"[Step {step}] JSON-parsning misslyckades — anropar validate_response automatiskt")
                 route_res = last_tool_entry["tool_result"]
                 decision = {
@@ -324,7 +325,15 @@ def run_agent(user_prompt: str) -> dict:
                      if t.get("tool_name") == "classify_sensitivity"), "low"
                 )
                 if classify_level == "high" and route_count > 0:
-                    tool_input["prompt"] = mask_pii(user_prompt)
+                    # Eskalering: använd maskad prompt från mask_pii-resultat eller fallback
+                    last_mask_result = next(
+                        (t["tool_result"] for t in reversed(trajectory)
+                         if t.get("tool_name") == "mask_pii"), None
+                    )
+                    if last_mask_result and "masked_text" in last_mask_result:
+                        tool_input["prompt"] = last_mask_result["masked_text"]
+                    else:
+                        tool_input["prompt"] = mask_pii(user_prompt)["masked_text"]
                     tool_input["level"] = "low"
                 else:
                     tool_input["prompt"] = user_prompt

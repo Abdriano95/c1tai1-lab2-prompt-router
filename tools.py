@@ -17,6 +17,16 @@ PII_PATTERNS = {
     "postnummer": r"\b\d{3}\s?\d{2}\b",
 }
 
+# Platshållare för maskad PII
+PII_LABELS = {
+    "personnummer": "[PERSONNUMMER]",
+    "epost": "[EMAIL]",
+    "telefonnummer": "[TELEFONNUMMER]",
+    "kreditkort": "[KREDITKORT]",
+    "ip_adress": "[IP-ADRESS]",
+    "postnummer": "[POSTNUMMER]",
+}
+
 # Känsliga nyckelord som indikerar personlig kontext
 SENSITIVE_KEYWORDS = [
     "personnummer", "pnr", "social security",
@@ -65,6 +75,25 @@ def classify_sensitivity(prompt: str) -> dict[str, Any]:
             "matches": [],
             "details": "No PII detected"
         }
+
+
+def mask_pii(text: str) -> dict[str, Any]:
+    """
+    Ersätter PII-matchningar med säkra platshållare så modellen aldrig ser rå känslig data.
+    Används som tool vid eskalering innan prompt skickas till cloud-modellen.
+
+    Parametrar:
+        text: Texten som ska maskeras.
+
+    Returnerar:
+        dict med masked_text: den maskade texten.
+    """
+    masked = text
+    for pattern_name, pattern in PII_PATTERNS.items():
+        label = PII_LABELS.get(pattern_name, "[REDACTED]")
+        masked = re.sub(pattern, label, masked, flags=re.IGNORECASE)
+    return {"masked_text": masked}
+
 
 MODELS = {
     "llama-large": ChatGroq(model="llama-3.3-70b-versatile", api_key=os.getenv("GROQ_API_KEY")),
