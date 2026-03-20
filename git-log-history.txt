@@ -1,0 +1,43 @@
+Git log --oneline --date=short --format="%h %ad %s"
+================================================
+
+8d1e185 2026-03-12 mer demo
+ae13520 2026-03-12 Lagt till demo :)
+3b73565 2026-03-08 delete: remove outdated session logs (2, 3, 4) to streamline documentation and focus on current implementation details
+13dfd2c 2026-03-08 Döpt om sensitivite-metoden för att stämma med all dokumentation.
+8ee7218 2026-03-07 Merge branch 'main' of https://github.com/Abdriano95/c1tai1-lab2-prompt-router
+b61849b 2026-03-07 update: improve agent validation logic and enhance routing model selection based on sensitivity levels; optimize evaluation results for better performance
+81207bd 2026-03-07 update: refine agent logic for handling validation failures and adjust routing model selection based on sensitivity level; update evaluation results for improved accuracy and response times
+af5810d 2026-03-07 Update README with team member information
+9b93c9e 2026-03-07 update: translate README content to Swedish for improved localization and accessibility
+e3318e8 2026-03-07 update: translate comments and docstrings in agent, evaluate, and tools modules to Swedish for improved localization
+985dbf5 2026-03-07 update: refine workflow diagram in README for improved clarity and consistency in tool naming
+4b26893 2026-03-07 update: adjust formatting in README for clarity in workflow diagram and tool descriptions
+312d46c 2026-03-07 update: enhance README to reflect PII masking implementation, update routing accuracy to 100%, and clarify evaluation results and system architecture
+e839c34 2026-03-07 add: implement PII masking functionality in agent and update evaluation results with improved response times and validation statuses
+14f0273 2026-03-07 Kombinerat Abbes och Carros, hört ny eval
+482311e 2026-03-07 update: enhance session log with rate limit handling details and subsequent removal after upgrading to paid Groq key
+765187c 2026-03-07 refactor: streamline agent and evaluation processes by removing unnecessary sleep calls and simplifying error handling for LLM and tool invocations
+2023bbc 2026-03-07 update: revise evaluation results with corrected time, steps, and outcomes for multiple test cases
+0772152 2026-03-07 add: include new evaluation test case for "Matematisk formel" with expected and actual outcomes
+b9857aa 2026-03-07 add: include new evaluation test case for "Bokförslag" with expected and actual outcomes
+636e566 2026-03-07 update: modify evaluation results with adjusted time and step values for multiple test cases
+9fcb206 2026-03-07 add: new evaluation test cases for "Teknisk jämförelse", "Matlagningsfråga", "Historisk sammanfattning", and "Datavetenskapsfråga" with expected outcomes
+151bdc4 2026-03-07 add: new evaluation test cases for "Utbildningsfråga" and "Kreativ förfrågan" with expected outcomes
+124d0fb 2026-03-07 fix: agent-loop fungerar end-to-end med classify → route → validate → final
+f973727 2026-03-07 update gitignore
+bdd6f67 2026-03-07 correct name method
+2edaec4 2026-03-04 ändrat struktur för att det ska stämma med vår tekniska dokumentation. kan sortera senare.
+1dbef0d 2026-03-04 uppdaterat så vi kan testa alla metoder i tools.
+c87fadf 2026-03-04 Lagt in evaluate.py enligt planeringsdok, inte ändrat något.
+94892bf 2026-03-04 Lagt till direkt från planeringsdokument, inte ändrat något.
+2264364 2026-03-04 Lagt till ytterligare tools
+4a42004 2026-03-04 update again.py
+dc4500c 2026-03-04 Resolve merge conflict in tools.py: accept remote version
+8e78803 2026-03-04 committing
+cd7ce43 2026-03-04 Merge pull request #1 from Abdriano95/sensitivitycheck
+7cb896d 2026-03-04 Skapat mapp för tester och skapat test för sensitivity.
+53669cd 2026-03-04 Uppdaterat tools.py och lagt till test.py
+adcb410 2026-03-04 Merge remote
+e83baef 2026-03-04 Initial commit
+ec9d6fa 2026-03-04 Initial setup: project structure, dependencies, .gitignore
