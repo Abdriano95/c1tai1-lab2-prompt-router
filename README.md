@@ -243,22 +243,22 @@ Alla 20 promptar klassificerades korrekt och dirigerades till rätt modell.
 
 ### Validering: 20/20 (100%)
 
-Alla 20 promptar passerade validering. Genomsnittligt antal steg per prompt: ~4,2.
+Alla 20 promptar passerade validering. Genomsnittligt antal steg per prompt: ~4,5 (beroende på hur många som eskaleras).
 
 ### End-to-end-verifierade tester
 
 | Prompt | Nivå | Initial modell | Eskalerad? | Validering | Steg |
 |--------|------|----------------|------------|------------|------|
 | Personnummer | high | llama-small (lokal) | nej | pass | 4 |
-| E-postadress | high | llama-small (lokal) | ibland | pass | 4–7 |
+| E-postadress | high | llama-small (lokal) | ja | pass | 7 |
 | Telefonnummer | high | llama-small (lokal) | nej | pass | 4 |
 | Kreditkortsnummer | high | llama-small (lokal) | nej | pass | 4 |
-| Hemadress (nyckelord) | high | llama-small (lokal) | ibland | pass | 4–7 |
-| Lön (nyckelord) | high | llama-small (lokal) | nej | pass | 4 |
+| Hemadress (nyckelord, Storgatan) | high | llama-small (lokal) | nej | pass | 4 |
+| Lön (nyckelord) | high | llama-small (lokal) | ja | pass | 7 |
 | Medicinsk diagnos (nyckelord) | high | llama-small (lokal) | nej | pass | 4 |
 | Lösenord (nyckelord) | high | llama-small (lokal) | nej | pass | 4 |
-| E-post + telefon kombinerat | high | llama-small (lokal) | nej | pass | 4 |
-| Hemadress (nyckelord) | high | llama-small (lokal) | nej | pass | 4 |
+| E-post + telefon kombinerat | high | llama-small (lokal) | ja | pass | 7 |
+| Hemadress (nyckelord, Björkvägen) | high | llama-small (lokal) | nej | pass | 4 |
 | Enkel faktafråga | low | llama-large (moln) | — | pass | 4 |
 | Utbildningsfråga | low | llama-large (moln) | — | pass | 4 |
 | Kreativ förfrågan | low | llama-large (moln) | — | pass | 4 |
@@ -309,6 +309,7 @@ Baselinen har ingen routingmedvetenhet — varje prompt, oavsett känslighet, sk
 | Validering misslyckas upprepade gånger | Automatisk avslutning efter eskaleringsförsök, returnerar bästa tillgängliga svar |
 | Okänt verktygnamn | Loggas som fel i trajectory, loopen fortsätter |
 | LLM hoppar över klassificeringssteget | Systemprompt och next-hint-mekanismen upprätthåller korrekt ordning |
+| LLM hoppar över mask_pii vid eskalering | Fallback: agenten anropar mask_pii automatiskt och injicerar resultatet |
 
 ---
 
