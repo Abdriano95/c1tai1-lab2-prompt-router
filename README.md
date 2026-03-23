@@ -60,10 +60,10 @@ Byggt för Lab 2 (Agentiska arbetsflöden) i kursen *Tillämpning av AI-agenter 
 │  │  Sees: prompt + trajectory + step + next hint     │       │
 │  │  Decides: which tool to call next                 │       │
 │  │  Stops: when "final" or max_steps reached         │       │
-│  └────────────────────┬──────────────────────────────┘       │
-│                       |                                      │
-│        ┌──────────────┼──────────────────┬──────────────┐    │
-│        ▼              ▼                  ▼              ▼    │
+│  └───────────────────┬───────────────────────────────┘       │
+│                      |                                       │
+│        ┌─────────────┼─────────────┬───────────────┐         │
+│        ▼             ▼             ▼               ▼         │
 │  ┌───────────┐ ┌──────────┐ ┌─────────────┐ ┌──────────────┐ │
 │  │ classify_ │ │ mask_pii │ │   route     │ │   validate   │ │
 │  │sensitivity│ │          │ │ _to_model   │ │  _response   │ │
